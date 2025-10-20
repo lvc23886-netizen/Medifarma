@@ -1,38 +1,33 @@
-*&---------------------------------------------------------------------*
-*& Report  ZPP_ACT_PROP_SOP_CELIMA
-*&
-*&---------------------------------------------------------------------*
-*&
-*&
-*&---------------------------------------------------------------------*
+*&============================================================*
+*& Report ZPPPR_CARGA_SOP                                      *
+*&============================================================*
+*& Descripción: Actualización Porcentaje Jerarquía Planifiación   *
+*&                                                            *
+*&     Fecha Creación  = 12.10.2025                           *
+*&     Creador         = KUMO                                 *
+*&     Empresa         = KUMO                                 *
+*&                                                            *
+*&============================================================*
+*& Histórico de modificaciones                                *
+*&============================================================*
+*& @NNN  NNN = numeración de 000 a 999.                      *
+*& Autor:                                                     *
+*& Fecha:                                                     *
+*& Descripción la Modificación:                               *
+*&                                                            *
+*&============================================================*
+REPORT zpppr_act_jp.
 
-REPORT zpp_act_porc_sop_celima.
 *---------------------------------------------------------------------*
 * Tablas internas y estructuras
 *---------------------------------------------------------------------*
-TYPES: BEGIN OF ty_pbim,
-        matnr TYPE pbim-matnr,
-        werks TYPE pbim-werks,
-        bedae TYPE pbim-bedae,
-        versb TYPE pbim-versb,
-        bdzei TYPE pbim-bdzei,
-        pdatu TYPE pbed-pdatu,
-        meins TYPE pbed-meins,
-        plnmg TYPE pbed-plnmg,
-        entmg TYPE pbed-entmg,
-       END OF ty_pbim,
-       BEGIN OF ty_prom,
+TYPES: BEGIN OF ty_prom,
          matnr TYPE s700-matnr,
          spmon TYPE s700-spmon,
          menge TYPE mseg-menge,
          cant TYPE i,
          porc TYPE mseg-menge,
        END OF ty_prom,
-       BEGIN OF ty_maktx,
-         matnr TYPE marc-matnr,
-         maktx TYPE makt-maktx,
-*         dispo TYPE marc-dispo,
-         END OF ty_maktx,
        BEGIN OF ty_matnr,
          matnr TYPE marc-matnr,
          werks TYPE marc-werks,
@@ -49,40 +44,29 @@ TYPES: BEGIN OF ty_pbim,
          antei TYPE cha_class_view-sollwert,
          END OF ty_alv.
 
-DATA: st_alv TYPE ty_alv,
-      ti_alv LIKE STANDARD TABLE OF st_alv,
+DATA: ti_alv    TYPE STANDARD TABLE OF ty_alv,
       st_fcat   TYPE slis_fieldcat_alv,
       ti_fcat   LIKE STANDARD TABLE OF st_fcat,
       st_layout TYPE slis_layout_alv,
-      st_pbim TYPE ty_pbim,
-      ti_pbim LIKE STANDARD TABLE OF st_pbim,
-      st_maktx TYPE ty_maktx,
-      ti_maktx LIKE STANDARD TABLE OF st_maktx,
-      st_matnr TYPE ty_matnr,
-      ti_matnr LIKE STANDARD TABLE OF st_matnr,
-      ti_matnrnd LIKE STANDARD TABLE OF st_matnr,
-      ti_matnr2 LIKE STANDARD TABLE OF st_matnr,
-      st_prom TYPE ty_prom,
-      ti_prom LIKE STANDARD TABLE OF st_prom,
-      st_prom2 TYPE ty_prom,
-      ti_prom2 LIKE STANDARD TABLE OF st_prom2,
-      st_s700 TYPE s700,
-      ti_s700 LIKE STANDARD TABLE OF st_s700,
-      st_pgan TYPE pgan,
-      ti_pgan LIKE STANDARD TABLE OF st_pgan,
-      st_s700e TYPE s700e,
-      ti_s700e LIKE STANDARD TABLE OF st_s700e,
-      st_s700e2 TYPE s700e,
-      ti_s700e2 LIKE STANDARD TABLE OF st_s700e,
-      st_s700egr TYPE s700e,
-      ti_s700egr LIKE STANDARD TABLE OF st_s700e..
+      st_matnr  TYPE ty_matnr,
+      ti_matnr  like STANDARD TABLE OF st_matnr,
+      st_prom   TYPE ty_prom,
+      ti_prom   LIKE STANDARD TABLE OF st_prom,
+      ti_prom2  LIKE STANDARD TABLE OF st_prom,
+
+
+      ti_s700   LIKE STANDARD TABLE OF s700,
+      ti_pgan   LIKE STANDARD TABLE OF pgan,
+      ti_s700e  LIKE STANDARD TABLE OF s700e.
 DATA: gl_tabix TYPE sy-tabix.
+
 *---------------------------------------------------------------------*
 * Parámetros de selección
 *---------------------------------------------------------------------*
 SELECTION-SCREEN BEGIN OF BLOCK b01 WITH FRAME TITLE text-t01.
 PARAMETERS: p_mcinf TYPE rmcp7-mcinf DEFAULT 'S700',
-            p_bukrs TYPE t001-bukrs DEFAULT '1000'.
+            p_bukrs TYPE t001-bukrs DEFAULT '1000',
+            p_monat TYPE monat DEFAULT '12'.
 PARAMETERS: r_act RADIOBUTTON GROUP rb1 DEFAULT 'X',
             r_rep RADIOBUTTON GROUP rb1.
 SELECTION-SCREEN END OF BLOCK b01.
@@ -114,57 +98,28 @@ START-OF-SELECTION.
 *  <--  p2        text
 *----------------------------------------------------------------------*
 FORM obtiene_datos .
+  DATA: lv_first TYPE d,
+        lv_start TYPE d,
+        lv_end   TYPE d.
+
   RANGES: r_spmon FOR s700-spmon,
           r_datum FOR sy-datum.
-  CLEAR:r_spmon,r_datum.
-  REFRESH:r_spmon,r_datum,ti_s700e,ti_s700,ti_matnr2.
-*Se obtienen los 3 meses anteriores.
-  r_datum-sign   = 'I'.
-  r_datum-option = 'BT'.
-  r_datum-low = sy-datum.
-  r_datum-low+6(2) = '01'.
-  CALL FUNCTION 'HR_HCP_GET_LAST_DAY_OF_MONTH'
-    EXPORTING
-      im_date              = r_datum-low
-    IMPORTING
-*     EX_DATE_IS_MONTHEND  =
-      ex_last_day_of_month = r_datum-high.
-  APPEND r_datum.
-*  r_datum-high = sy-datum.
-  IF sy-datum+4(2) GT '03'.
-    CLEAR:r_spmon.
-    r_spmon-sign = 'I'.
-    r_spmon-option = 'BT'.
-    r_spmon-low+0(4) = sy-datum+0(4).
-    r_spmon-low+4(2) = sy-datum+4(2) - 3.
-    r_spmon-high+0(4) = sy-datum+0(4).
-    r_spmon-high+4(2) = sy-datum+4(2) - 1.
-    APPEND r_spmon.
-  ELSE.
-    CLEAR:r_spmon.
-    r_spmon-sign = 'I'.
-    r_spmon-option = 'BT'.
-    r_spmon-low+0(4) = sy-datum+0(4) - 1.
-*    r_spmon-high+0(4) = sy-datum+0(4) - 1.
-    CASE sy-datum+4(2).
-      WHEN '01'.
-        r_spmon-low+4(2) = '10'.
-        r_spmon-high+4(2) = '12'.
-        r_spmon-high+0(4) = sy-datum+0(4) - 1.
-      WHEN '02'.
-        r_spmon-low+4(2) = '11'.
-        r_spmon-high+4(2) = '01'.
-        r_spmon-high+0(4) = sy-datum+0(4).
-      WHEN '03'.
-        r_spmon-low+4(2) = '12'.
-        r_spmon-high+4(2) = '02'.
-        r_spmon-high+0(4) = sy-datum+0(4).
-    ENDCASE.
 
-    APPEND r_spmon.
-  ENDIF.
+  CLEAR:r_spmon,r_datum,lv_first,lv_start,lv_end.
+  REFRESH:r_spmon,r_datum.
 
-  REFRESH: ti_pgan.
+****Calculo de fechas
+  lv_first = sy-datum.
+  lv_first+6(2) = '01'.
+
+  PERFORM calcula_dia USING lv_first '00' p_monat '-' '00'
+                      CHANGING lv_start.
+
+  PERFORM calcula_dia USING lv_first '00' 1 '-' '00'
+                      CHANGING lv_end.
+
+  r_spmon[] = VALUE #( ( sign = 'I' option = 'BT' low = lv_start high = lv_end ) ).
+
   SELECT *  INTO TABLE ti_pgan
     FROM pgan
     WHERE gstru EQ p_mcinf.
@@ -172,36 +127,13 @@ FORM obtiene_datos .
   SELECT *  INTO TABLE ti_s700e
     FROM s700e
     WHERE bukrs EQ p_bukrs.
+
   SELECT * INTO TABLE ti_s700
   FROM s700
     WHERE vrsio EQ '000'
     AND spmon IN r_spmon
     AND bukrs EQ p_bukrs.
-  REFRESH:ti_s700e2,ti_pbim.
-  ti_s700e2[] = ti_s700e[].
-  DELETE ti_s700e2 WHERE werks EQ space.
-  REFRESH:ti_matnr.
-  IF NOT ti_s700e2 IS INITIAL.
-*Se obtienen las necesidades del mes.
-    SELECT a~matnr a~werks a~bedae a~versb a~bdzei b~pdatu b~meins b~plnmg b~entmg
-    INTO TABLE ti_pbim
-    FROM pbim AS a INNER JOIN pbed AS b
-      ON a~bdzei EQ b~bdzei
-    FOR ALL ENTRIES IN ti_s700e2
-      WHERE matnr EQ ti_s700e2-matnr
-        AND werks EQ ti_s700e2-werks
-        AND pdatu IN r_datum.
 
-    SELECT matnr werks dismm dispo
-      INTO TABLE ti_matnr
-      FROM marc FOR ALL ENTRIES IN ti_s700e2
-      WHERE matnr EQ ti_s700e2-matnr
-      AND werks EQ ti_s700e2-werks.
-    REFRESH:ti_matnrnd.
-    ti_matnrnd[] = ti_matnr[].
-*    DELETE ti_matnrnd WHERE dispo EQ 'ND'.
-    DELETE ti_matnrnd WHERE dismm EQ 'ND'.
-  ENDIF.
 
 ENDFORM. " OBTIENE_DATOS
 *&---------------------------------------------------------------------*
@@ -214,28 +146,22 @@ ENDFORM. " OBTIENE_DATOS
 *----------------------------------------------------------------------*
 FORM procesa_datos.
   DATA:l_menge TYPE mseg-menge,
-        l_char1 TYPE qfltp-sollwert,
-        l_porc TYPE mseg-menge.
+       l_char1 TYPE qfltp-sollwert,
+       l_porc  TYPE mseg-menge.
+
 *Se obtiene cantidad
   REFRESH:ti_prom,ti_prom2.
-  LOOP AT ti_s700 INTO st_s700.
+  LOOP AT ti_s700 ASSIGNING FIELD-SYMBOL(<fs_s700>).
     CLEAR: st_prom.
-    st_prom-matnr = st_s700-matnr.
-    st_prom-spmon = st_s700-spmon.
-    st_prom-menge = st_s700-absat.
-    IF st_prom-menge lt 0.
-      clear:st_prom-menge.
+    st_prom-matnr = <fs_s700>-matnr.
+    st_prom-spmon = <fs_s700>-spmon.
+    st_prom-menge = <fs_s700>-absat.
+    IF st_prom-menge LT 0.
+      CLEAR:st_prom-menge.
     ENDIF.
     COLLECT st_prom INTO ti_prom.
   ENDLOOP.
-*Se calcula la cantidad de demanda por material
-  LOOP AT ti_pbim INTO st_pbim.
-    CLEAR: st_prom.
-    st_prom-matnr = st_pbim-matnr.
-    st_prom-spmon = st_pbim-pdatu+0(6).
-    st_prom-menge = st_pbim-plnmg + st_pbim-entmg.
-    COLLECT st_prom INTO ti_prom.
-  ENDLOOP.
+
   REFRESH:ti_prom2.
   LOOP AT ti_prom INTO st_prom.
     CLEAR:st_prom-spmon.
@@ -245,129 +171,112 @@ FORM procesa_datos.
     COLLECT st_prom INTO ti_prom2.
   ENDLOOP.
 
-  LOOP AT  ti_prom2 INTO st_prom2.
-    gl_tabix = sy-tabix.
-    IF st_prom-cant GT 0.
-      st_prom2-menge = st_prom2-menge / st_prom2-cant.
+  LOOP AT  ti_prom2 ASSIGNING FIELD-SYMBOL(<fs_prom2>).
+    IF <fs_prom2>-cant GT 0.
+      <fs_prom2>-menge = <fs_prom2>-menge / <fs_prom2>-cant.
     ELSE.
-      CLEAR:st_prom2-menge.
+      CLEAR:<fs_prom2>-menge.
     ENDIF.
-    MODIFY ti_prom2 FROM st_prom2 INDEX gl_tabix.
   ENDLOOP.
+
 *Se obtiene los materiales y grupos de producto
-  REFRESH:ti_s700e2,ti_s700egr.
-  ti_s700e2[] = ti_s700e[].
-  ti_s700egr[] = ti_s700e[].
-  DELETE ti_s700e2 WHERE werks NE space.
-  DELETE ti_s700e2 WHERE matnr EQ space.
+  DATA(lt_s700e2)  = ti_s700e.
+  DELETE lt_s700e2 WHERE werks NE space.
+  DELETE lt_s700e2 WHERE matnr EQ space.
+
 *Se limpian los porcentajes.
-  LOOP AT ti_s700e2 INTO st_s700e2.
-    READ TABLE ti_s700e INTO st_s700e WITH KEY bukrs = st_s700e2-bukrs
-                                                       prgrp = st_s700e2-prgrp
-                                                       matnr = st_s700e2-matnr
-                                                       werks = space.
+  LOOP AT lt_s700e2 ASSIGNING FIELD-SYMBOL(<fs_s700e2>).
+    READ TABLE ti_s700e ASSIGNING FIELD-SYMBOL(<fs_s700e>) WITH KEY bukrs = <fs_s700e2>-bukrs
+                                                                    prgrp = <fs_s700e2>-prgrp
+                                                                    matnr = <fs_s700e2>-matnr
+                                                                    werks = space.
     IF sy-subrc EQ 0.
-      READ TABLE ti_pgan INTO st_pgan WITH KEY plobu = st_s700e-plobj.
+      READ TABLE ti_pgan ASSIGNING FIELD-SYMBOL(<fs_pgan>) WITH KEY plobu = <fs_s700e>-plobj.
       IF sy-subrc EQ 0.
-        gl_tabix = sy-tabix.
-        CLEAR:st_pgan-antei.
-*              st_pgan-antei = l_porc.
-        MODIFY ti_pgan FROM st_pgan INDEX gl_tabix.
+        CLEAR:<fs_pgan>-antei.
       ENDIF.
     ENDIF.
   ENDLOOP.
-  DELETE ti_s700egr WHERE prgrp EQ space.
-  DELETE ti_s700egr WHERE matnr NE space.
-  SORT ti_s700e2 BY bukrs prgrp.
-  SORT ti_s700egr BY bukrs prgrp.
-  LOOP AT ti_s700egr INTO st_s700egr.
+
+  DATA(lt_s700egr) = ti_s700e[].
+  DELETE lt_s700egr WHERE prgrp EQ space.
+  DELETE lt_s700egr WHERE matnr NE space.
+  SORT lt_s700egr BY bukrs prgrp.
+  SORT lt_s700e2 BY bukrs prgrp.
+
+  LOOP AT lt_s700egr ASSIGNING FIELD-SYMBOL(<fs_s700egr>).
     CLEAR: l_menge.
 *Se obtiene el valor total de los materiales que conforman el grupo de productos
-    LOOP AT ti_s700e2 INTO st_s700e2 WHERE bukrs EQ st_s700egr-bukrs
-                                       AND prgrp EQ st_s700egr-prgrp.
-*Se valida que el material no tenga ND en todos los centros.
-      READ TABLE ti_matnrnd INTO st_matnr WITH KEY matnr = st_s700e2-matnr.
+    LOOP AT lt_s700e2 ASSIGNING <fs_s700e2> WHERE bukrs EQ <fs_s700egr>-bukrs
+                                              AND prgrp EQ <fs_s700egr>-prgrp.
+      READ TABLE ti_prom2 ASSIGNING <fs_prom2> WITH KEY matnr = <fs_s700e2>-matnr.
       IF sy-subrc EQ 0.
-        READ TABLE ti_prom2 INTO st_prom2 WITH KEY matnr = st_s700e2-matnr.
-        IF sy-subrc EQ 0.
-          ADD st_prom2-menge TO l_menge.
-        ENDIF.
+        ADD <fs_prom2>-menge TO l_menge.
       ENDIF.
     ENDLOOP.
+
+
     CLEAR:l_porc.
     IF NOT l_menge IS INITIAL.
-      LOOP AT ti_s700e2 INTO st_s700e2 WHERE bukrs EQ st_s700egr-bukrs
-                                         AND prgrp EQ st_s700egr-prgrp.
+      LOOP AT lt_s700e2 ASSIGNING <fs_s700e2> WHERE bukrs EQ <fs_s700egr>-bukrs
+                                                AND prgrp EQ <fs_s700egr>-prgrp.
         CLEAR:l_porc.
-*Se valida que el material no tenga ND en todos los centros.
-        READ TABLE ti_matnrnd INTO st_matnr WITH KEY matnr = st_s700e2-matnr.
+        READ TABLE ti_prom2 ASSIGNING <fs_prom2> WITH KEY matnr = <fs_s700e2>-matnr.
         IF sy-subrc EQ 0.
-          READ TABLE ti_prom2 INTO st_prom2 WITH KEY matnr = st_s700e2-matnr.
+          l_porc = ( <fs_prom2>-menge ) / l_menge .
+          READ TABLE ti_s700e ASSIGNING <fs_s700e> WITH KEY bukrs = <fs_s700egr>-bukrs
+                                                            prgrp = <fs_s700egr>-prgrp
+                                                            matnr = <fs_s700e2>-matnr
+                                                            werks = space.
           IF sy-subrc EQ 0.
-            l_porc = ( st_prom2-menge ) / l_menge .
-            READ TABLE ti_s700e INTO st_s700e WITH KEY bukrs = st_s700egr-bukrs
-                                                       prgrp = st_s700egr-prgrp
-                                                       matnr = st_s700e2-matnr
-                                                       werks = space.
+            READ TABLE ti_pgan ASSIGNING <fs_pgan> WITH KEY plobu = <fs_s700e>-plobj.
             IF sy-subrc EQ 0.
-              READ TABLE ti_pgan INTO st_pgan WITH KEY plobu = st_s700e-plobj.
-              IF sy-subrc EQ 0.
-                gl_tabix = sy-tabix.
-                CLEAR:st_pgan-antei.
-                IF l_porc lT 0.
-                  CLEAR:l_porc.
-                  l_char1 = l_porc.
-                ELSE.
-                  l_char1 = l_porc.
-                ENDIF.
+              CLEAR:<fs_pgan>-antei.
+              IF l_porc LT 0.
+                CLEAR:l_porc.
+                l_char1 = l_porc.
+              ELSE.
+                l_char1 = l_porc.
+              ENDIF.
 
-                CALL FUNCTION 'QSS0_CHAR_FLTP_CONVERSION'
-                  EXPORTING
-*                   I_CHAR_FIELD_NAME        = ' '
-                    i_character_string       = l_char1
-                    i_number_of_digits       = 3
-                  IMPORTING
-*                   E_VALUE_NOT_INITIAL_FLAG =
-                    e_fltp_value             = st_pgan-antei.
-                MODIFY ti_pgan FROM st_pgan INDEX gl_tabix.
-              ENDIF.
+              CALL FUNCTION 'QSS0_CHAR_FLTP_CONVERSION'
+                EXPORTING
+                  i_character_string = l_char1
+                  i_number_of_digits = 3
+                IMPORTING
+                  e_fltp_value       = <fs_pgan>-antei.
             ENDIF.
-          ELSE.
-            READ TABLE ti_s700e INTO st_s700e WITH KEY bukrs = st_s700egr-bukrs
-                                                   prgrp = st_s700egr-prgrp
-                                                   matnr = st_s700e2-matnr
-                                                   werks = space.
+          ENDIF.
+        ELSE.
+          READ TABLE ti_s700e ASSIGNING <fs_s700e> WITH KEY bukrs = <fs_s700egr>-bukrs
+                                                            prgrp = <fs_s700egr>-prgrp
+                                                            matnr = <fs_s700e2>-matnr
+                                                            werks = space.
+          IF sy-subrc EQ 0.
+            READ TABLE ti_pgan ASSIGNING <fs_pgan> WITH KEY plobu = <fs_s700e>-plobj.
             IF sy-subrc EQ 0.
-              READ TABLE ti_pgan INTO st_pgan WITH KEY plobu = st_s700e-plobj.
-              IF sy-subrc EQ 0.
-                gl_tabix = sy-tabix.
-                CLEAR:st_pgan-antei.
-*              st_pgan-antei = l_porc.
-                MODIFY ti_pgan FROM st_pgan INDEX gl_tabix.
-              ENDIF.
+              CLEAR:<fs_pgan>-antei.
             ENDIF.
           ENDIF.
         ENDIF.
       ENDLOOP.
     ELSE.
-      LOOP AT ti_s700e2 INTO st_s700e2 WHERE bukrs EQ st_s700egr-bukrs
-                                       AND prgrp EQ st_s700egr-prgrp.
-        READ TABLE ti_s700e INTO st_s700e WITH KEY bukrs = st_s700egr-bukrs
-                                                   prgrp = st_s700egr-prgrp
-                                                   matnr = st_s700e2-matnr
-                                                   werks = space.
+      LOOP AT lt_s700e2 ASSIGNING <fs_s700e2>  WHERE bukrs EQ <fs_s700egr>-bukrs
+                                                 AND prgrp EQ <fs_s700egr>-prgrp.
+        READ TABLE ti_s700e ASSIGNING <fs_s700e> WITH KEY bukrs = <fs_s700egr>-bukrs
+                                                          prgrp = <fs_s700egr>-prgrp
+                                                          matnr = <fs_s700e2>-matnr
+                                                          werks = space.
         IF sy-subrc EQ 0.
-          READ TABLE ti_pgan INTO st_pgan WITH KEY plobu = st_s700e-plobj.
+          READ TABLE ti_pgan ASSIGNING <fs_pgan> WITH KEY plobu = <fs_s700e>-plobj.
           IF sy-subrc EQ 0.
-            gl_tabix = sy-tabix.
-            CLEAR:st_pgan-antei.
-*              st_pgan-antei = l_porc.
-            MODIFY ti_pgan FROM st_pgan INDEX gl_tabix.
+            CLEAR:<fs_pgan>-antei.
           ENDIF.
         ENDIF.
       ENDLOOP.
     ENDIF.
   ENDLOOP.
+
   CALL FUNCTION 'PGAN_UPDATE'
     EXPORTING
       i_vbschr = 'U'
@@ -384,59 +293,58 @@ ENDFORM. " PROCESA_DATOS
 *  <--  p2        text
 *----------------------------------------------------------------------*
 FORM procesa_reporte .
-  FIELD-SYMBOLS <fs_alv> TYPE ty_alv.
 *Se obtiene los materiales y grupos de producto
-  REFRESH:ti_s700e2,ti_s700egr,ti_alv.
-  ti_s700e2[] = ti_s700e[].
-  ti_s700egr[] = ti_s700e[].
-  DELETE ti_s700e2 WHERE werks NE space.
-  DELETE ti_s700e2 WHERE matnr EQ space.
-  LOOP AT ti_s700e2 INTO st_s700e2.
+  REFRESH:ti_alv.
+  DATA(lt_s700e2) = ti_s700e[].
+  DATA(lt_s700egr) = ti_s700e[].
+  DELETE lt_s700e2 WHERE werks NE space.
+  DELETE lt_s700e2 WHERE matnr EQ space.
+
+  LOOP AT lt_s700e2 ASSIGNING FIELD-SYMBOL(<fs_s700e2>).
     CLEAR: st_matnr.
-    st_matnr-matnr = st_s700e2-matnr.
-    COLLECT st_matnr INTO ti_matnr2.
+    st_matnr-matnr = <fs_s700e2>-matnr.
+    COLLECT st_matnr INTO ti_matnr.
     CLEAR: st_matnr.
-    st_matnr-matnr = st_s700e2-prgrp.
-    COLLECT st_matnr INTO ti_matnr2.
-    CLEAR: st_alv.
-    READ TABLE ti_s700e INTO st_s700e WITH KEY bukrs = st_s700e2-bukrs
-                                                       prgrp = st_s700e2-prgrp
-                                                       matnr = st_s700e2-matnr
-                                                       werks = space.
+    st_matnr-matnr = <fs_s700e2>-prgrp.
+    COLLECT st_matnr INTO ti_matnr.
+
+   APPEND INITIAL LINE TO ti_alv ASSIGNING FIELD-SYMBOL(<fs_alv>).
+   READ TABLE ti_s700e ASSIGNING FIELD-SYMBOL(<fs_s700e>) WITH KEY bukrs = <fs_s700e2>-bukrs
+                                                                    prgrp = <fs_s700e2>-prgrp
+                                                                    matnr = <fs_s700e2>-matnr
+                                                                    werks = space.
     IF sy-subrc EQ 0.
-      MOVE-CORRESPONDING st_s700e TO st_alv.
-      READ TABLE ti_pgan INTO st_pgan WITH KEY plobu = st_s700e-plobj.
+      MOVE-CORRESPONDING <fs_s700e> TO <fs_alv>.
+      READ TABLE ti_pgan ASSIGNING FIELD-SYMBOL(<fs_pgan>) WITH KEY plobu = <fs_s700e>-plobj.
       IF sy-subrc EQ 0.
         CALL FUNCTION 'QSS0_FLTP_TO_CHAR_CONVERSION'
           EXPORTING
-            i_number_of_digits       = 3
-            i_fltp_value             = st_pgan-antei
-*           I_VALUE_NOT_INITIAL_FLAG = 'X'
-*           I_SCREEN_FIELDLENGTH     = 16
+            i_number_of_digits = 3
+            i_fltp_value       = <fs_pgan>-antei
           IMPORTING
-            e_char_field             = st_alv-antei.
-
+            e_char_field       = <fs_alv>-antei.
       ENDIF.
     ENDIF.
-    APPEND st_alv TO ti_alv.
+
   ENDLOOP.
+
 *Se obtiene datos adicionales.
-  REFRESH:ti_maktx.
-  IF NOT ti_matnr2 IS INITIAL.
-    SELECT matnr maktx INTO TABLE ti_maktx
-      FROM makt FOR ALL ENTRIES IN ti_matnr2
-      WHERE matnr EQ ti_matnr2-matnr
-      AND spras EQ sy-langu.
+  IF NOT ti_matnr IS INITIAL.
+    SELECT matnr,maktx INTO TABLE @DATA(lt_maktx)
+      FROM makt FOR ALL ENTRIES IN @ti_matnr
+      WHERE matnr EQ @ti_matnr-matnr
+      AND   spras EQ @sy-langu.
   ENDIF.
+
   LOOP AT ti_alv ASSIGNING <fs_alv>.
     <fs_alv>-antei = <fs_alv>-antei * 100.
-    READ TABLE ti_maktx INTO st_maktx WITH KEY matnr = <fs_alv>-matnr.
+    READ TABLE lt_maktx ASSIGNING FIELD-SYMBOL(<fs_maktx>) WITH KEY matnr = <fs_alv>-matnr.
     IF sy-subrc EQ 0.
-      <fs_alv>-maktx = st_maktx-maktx.
+      <fs_alv>-maktx = <fs_maktx>-maktx.
     ENDIF.
-    READ TABLE ti_maktx INTO st_maktx WITH KEY matnr = <fs_alv>-prgrp.
+    READ TABLE lt_maktx ASSIGNING <fs_maktx> WITH KEY matnr = <fs_alv>-prgrp.
     IF sy-subrc EQ 0.
-      <fs_alv>-maktx2 = st_maktx-maktx.
+      <fs_alv>-maktx2 = <fs_maktx>-maktx.
     ENDIF.
   ENDLOOP.
 ENDFORM. " PROCESA_REPORTE
@@ -454,17 +362,17 @@ FORM muestra_reporte .
   PERFORM f_fieldcat.
   CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
     EXPORTING
-      is_layout             = st_layout
-      it_fieldcat           = ti_fcat[]
+      is_layout     = st_layout
+      it_fieldcat   = ti_fcat[]
 *     i_screen_start_column = 20
 *     i_screen_start_line   = 5
 *     i_screen_end_column   = 120
 *     i_screen_end_line     = 15
     TABLES
-      t_outtab              = ti_alv[]
+      t_outtab      = ti_alv[]
     EXCEPTIONS
-      program_error         = 1
-      OTHERS                = 2.
+      program_error = 1
+      OTHERS        = 2.
 ENDFORM. " MUESTRA_REPORTE
 *&---------------------------------------------------------------------*
 *&      Form  F_FIELDCAT
@@ -540,22 +448,24 @@ FORM f_fieldcat .
 *         basme TYPE s700e-basme,
 *         antei TYPE s700e-antei,
 ENDFORM. " F_FIELDCAT
-
-*Text elements
-*----------------------------------------------------------
-* T01 Parámetros de selección
-
-
-*Selection texts
-*----------------------------------------------------------
-* P_BUKRS D       .
-* P_MCINF D       .
-* R_ACT         Actualiza
-* R_REP         Reporte
+*&---------------------------------------------------------------------*
+*&      Form  calcula_dia
+*&---------------------------------------------------------------------*
+FORM calcula_dia USING i_dats    TYPE sy-datum
+                       i_days    TYPE t5a4a-dlydy
+                       i_months  TYPE t5a4a-dlymo
+                       i_signum  TYPE c
+                       i_years  TYPE t5a4a-dlyyr
+                  CHANGING e_dats TYPE sy-datum.
 
 
-*Messages
-*----------------------------------------------------------
-*
-* Message class: Z001
-*000   Los registros se ingresaron correctamente
+  CALL FUNCTION 'RP_CALC_DATE_IN_INTERVAL'
+    EXPORTING
+      date      = i_dats
+      days      = i_days
+      months    = i_months
+      signum    = i_signum
+      years     = i_years
+    IMPORTING
+      calc_date = e_dats.
+ENDFORM.
