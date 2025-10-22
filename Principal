@@ -1,0 +1,179 @@
+*&---------------------------------------------------------------------*
+*& Report ZGPPR_MIF_0013
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+
+REPORT zgppr_mif_0013.
+TABLES: stko, mast.
+CONSTANTS: gc_text_object TYPE thead-tdobject VALUE 'BOM',
+           gc_text_id     TYPE thead-tdid     VALUE 'MZU'.
+
+*----------------------------------------------------------------------
+* Selección
+*----------------------------------------------------------------------
+PARAMETERS: p_spras TYPE spras DEFAULT sy-langu.
+
+SELECT-OPTIONS:
+  s_matnr FOR mast-matnr,
+  s_werks FOR mast-werks,
+  s_stlan FOR mast-stlan,
+  s_stlal FOR stko-stlal.           .
+
+*----------------------------------------------------------------------
+* Tipos y tablas
+*----------------------------------------------------------------------
+TYPES: BEGIN OF ty_out,
+         matnr TYPE matnr,
+         werks TYPE werks_d,
+         stlan TYPE stlan,     "Uso del BOM
+         stlal TYPE stalt,     "Alternativa
+         stlnr TYPE stnum,     "Número interno BOM
+         spras TYPE spras,
+         text2 TYPE string,
+         text  TYPE string,    "Texto concatenado
+         stktx TYPE stko-stktx,
+         stlst TYPE stko-stlst,
+       END OF ty_out,
+       BEGIN OF ty_mast,
+         matnr TYPE mast-matnr,
+         werks TYPE mast-werks,
+         stlan TYPE mast-stlan,
+         stlnr TYPE mast-stlnr,
+         stlal TYPE mast-stlal,
+         stktx TYPE stko-stktx,
+         stlst TYPE stko-stlst,
+       END OF ty_mast.
+
+DATA: ti_out TYPE STANDARD TABLE OF ty_out .
+DATA: ti_mast TYPE STANDARD TABLE OF ty_mast .
+
+FIELD-SYMBOLS <ft_outtab> TYPE ANY TABLE.
+
+* Objeto de la clase CL_SALV_TABLE
+DATA obj_alv_table TYPE REF TO cl_salv_table.
+
+*----------------------------------------------------------------------
+* Lógica principal
+*----------------------------------------------------------------------
+START-OF-SELECTION.
+  PERFORM check_auth.
+
+  SELECT a~matnr a~werks a~stlan a~stlnr a~stlal b~stktx b~stlst
+    FROM mast AS a
+    INNER JOIN stko AS b ON a~stlnr = b~stlnr AND a~stlal = b~stlal
+    INTO TABLE ti_mast
+    WHERE a~matnr IN s_matnr
+      AND a~werks IN s_werks
+      AND a~stlan IN s_stlan
+      AND a~stlal IN s_stlal
+      AND b~stlty  EQ 'M'.
+
+
+  LOOP AT ti_mast ASSIGNING FIELD-SYMBOL(<fs_mast>).
+    APPEND INITIAL LINE TO ti_out ASSIGNING FIELD-SYMBOL(<fs_out>).
+
+
+    DATA(lv_text)  = VALUE string( ).
+    DATA(lv_text2)  = VALUE string( ).
+    DATA(lv_found) = abap_false.
+
+    PERFORM read_bom_texts USING <fs_mast> p_spras
+                           CHANGING lv_text lv_text2 lv_found.
+
+    MOVE-CORRESPONDING <fs_mast> TO <fs_out>.
+
+    <fs_out>-spras = p_spras.
+    <fs_out>-text  = COND #( WHEN lv_found = abap_true THEN lv_text ELSE '' ) .
+    <fs_out>-text2  = COND #( WHEN lv_found = abap_true THEN lv_text2 ELSE '' ) .
+
+  ENDLOOP.
+
+  IF sy-subrc EQ 0 AND ti_out IS NOT INITIAL.
+    ASSIGN ti_out TO <ft_outtab>.
+  ELSE.
+    MESSAGE 'No se encontraron registros de listas de materiales.' TYPE 'S' DISPLAY LIKE 'E'.
+  ENDIF.
+
+*----------------------------------------------------------------------
+* ALV
+*----------------------------------------------------------------------
+  TRY.
+      cl_salv_table=>factory( IMPORTING r_salv_table = obj_alv_table
+                              CHANGING t_table       = <ft_outtab> ).
+      obj_alv_table->get_functions( )->set_all( abap_true ).
+      obj_alv_table->get_columns( )->get_column( 'TEXT2' )->set_long_text( 'Descripción de LMat' ).
+      obj_alv_table->get_columns( )->get_column( 'TEXT' )->set_long_text( 'Texto cabecera BOM' ).
+      obj_alv_table->display( ).
+    CATCH cx_salv_msg.
+      LOOP AT ti_out ASSIGNING FIELD-SYMBOL(<s>).
+        WRITE: / <s>-matnr, <s>-werks, <s>-stlan, <s>-stlal, <s>-stlnr, <s>-spras, 30(80) <s>-text.
+      ENDLOOP.
+  ENDTRY.
+
+*----------------------------------------------------------------------
+*
+*----------------------------------------------------------------------
+FORM read_bom_texts USING is_mast TYPE ty_mast iv_spras
+                    CHANGING cv_text  TYPE string
+                             cv_text2  TYPE string
+                             ev_found TYPE abap_bool.
+
+
+  DATA: lt_lines TYPE STANDARD TABLE OF tline.
+
+  DATA(lv_stlnr) = |{ is_mast-stlnr ALPHA = IN }|.
+
+  DATA(lv_name) = CONV tdobname( |{ sy-mandt }M{ lv_stlnr }|  ).
+
+  CALL FUNCTION 'READ_TEXT'
+    EXPORTING
+      id              = gc_text_id
+      language        = p_spras
+      name            = lv_name
+      object          = gc_text_object         "Text object para cabecera de BOM
+    TABLES
+      lines           = lt_lines
+    EXCEPTIONS
+      id              = 1
+      language        = 2
+      name            = 3
+      not_found       = 4
+      object          = 5
+      reference_check = 6
+      OTHERS          = 7.
+
+  IF sy-subrc = 0 AND lt_lines IS NOT INITIAL.
+    LOOP AT lt_lines ASSIGNING FIELD-SYMBOL(<ls_line>).
+      IF sy-tabix EQ 1.
+        cv_text2 = <ls_line>-tdline.
+      ELSEIF cv_text IS INITIAL.
+*        CONCATENATE cv_text cl_abap_char_utilities=>cr_lf <ls_line>-tdline
+        cv_text = <ls_line>-tdline.
+      ELSE.
+        CONCATENATE cv_text cl_abap_char_utilities=>cr_lf <ls_line>-tdline
+          INTO cv_text.
+      ENDIF.
+    ENDLOOP.
+    ev_found = abap_true.
+  ELSE.
+    CLEAR: cv_text,cv_text2.
+    ev_found = abap_false.
+  ENDIF.
+
+ENDFORM.
+*----------------------------------------------------------------------
+*
+*----------------------------------------------------------------------
+FORM check_auth.
+
+  AUTHORITY-CHECK OBJECT 'S_PROGRAM'
+    ID 'PROG'     FIELD sy-repid
+    ID 'P_GROUP'  FIELD 'ZCAB_BOM'
+    ID 'P_ACTION' FIELD 'SUBMIT'.
+  IF sy-subrc <> 0.
+    MESSAGE e001(zmsg) WITH 'No autorizado a ejecutar este reporte'.
+  ENDIF.
+
+
+ENDFORM.
