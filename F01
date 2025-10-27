@@ -1,0 +1,1214 @@
+*&---------------------------------------------------------------------*
+*& Include          ZMM_REPORT_COMPRAS_F01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Form build_fieldcat
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+form build_fieldcat .
+  free: gt_fieldcat .
+  data : ls_fieldcat type slis_fieldcat_alv.
+
+  ls_fieldcat-fieldname = 'BUKRS'.
+  ls_fieldcat-seltext_l = 'Sociedad'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 4..
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'EKORG'.
+  ls_fieldcat-seltext_l = 'Organización de compras'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 7.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'GJAHR'.
+  ls_fieldcat-seltext_l = 'AÑO'.
+  ls_fieldcat-just = 'L'.
+  ls_fieldcat-outputlen = 4.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'MONAT'.
+  ls_fieldcat-seltext_l = 'MES'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 3.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'BSART'.
+  ls_fieldcat-seltext_l = 'CLASE DE PEDIDO'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 5.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'EBELN'.
+  ls_fieldcat-seltext_l = 'NRO PEDIDO'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 10.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'AEDAT'.
+  ls_fieldcat-seltext_l = 'FECHA DE PEDIDO'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 10.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'FRGKE'.
+  ls_fieldcat-seltext_l = 'Status del pedido de compra'.
+  ls_fieldcat-just = 'L'.
+  ls_fieldcat-outputlen = 2.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'LOEKZ'.
+  ls_fieldcat-seltext_l = 'Indicador borrado'.
+  ls_fieldcat-just = 'R'.
+  ls_fieldcat-outputlen = 2.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+
+  ls_fieldcat-fieldname = 'FEC_ENVIOOC'.
+  ls_fieldcat-seltext_l = 'Fecha de lib pedido'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 12.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+
+  ls_fieldcat-fieldname = 'BANFN'.
+  ls_fieldcat-seltext_l = 'Nro de solped'.
+  ls_fieldcat-just = 'R'.
+  ls_fieldcat-outputlen = 10.
+  ls_fieldcat-no_zero = 'X' .
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'FRGDT'.
+  ls_fieldcat-seltext_l = 'Fecha de liberación solped'.
+  ls_fieldcat-just = 'R'.
+  ls_fieldcat-outputlen = 10.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'BADAT'.
+  ls_fieldcat-seltext_l = 'Fecha de Fijación solped'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 10.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'LOEKZ2'.
+  ls_fieldcat-seltext_l = 'Ind. Borrado SOLPED'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 2.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'LIFNR'.
+  ls_fieldcat-seltext_l = 'Cod_Proveedor'.
+  ls_fieldcat-just = 'L'.
+  ls_fieldcat-outputlen = 10.
+  ls_fieldcat-no_zero = 'X'.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'NAME'.
+  ls_fieldcat-seltext_l = 'Proveedor'.
+  ls_fieldcat-just = 'L'.
+  ls_fieldcat-outputlen = 40.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'LAND1'.
+  ls_fieldcat-seltext_l = 'PAIS PROVEEDOR'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 3.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'LOTESAP'.
+  ls_fieldcat-seltext_l = 'Lote SAP'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 10.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'EBELP'.
+  ls_fieldcat-seltext_l = 'Posión compra'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 5.
+  ls_fieldcat-no_zero = 'X'.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'KOSTL'.
+  ls_fieldcat-seltext_l = 'Centro_Costos'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 10.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'MATNR'.
+  ls_fieldcat-seltext_l = 'cod_producto'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 18.
+  ls_fieldcat-no_zero = 'X'.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'TXZ01'.
+  ls_fieldcat-seltext_l = 'Descrip_Producto'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 13.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'MATKL'.
+  ls_fieldcat-seltext_l = 'Grupo articulo'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 8.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'TECHDESC'.
+  ls_fieldcat-seltext_l = 'SOLICITANTE USUARIO'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 16.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'AFNAM'.
+  ls_fieldcat-seltext_l = 'SOLICITANTE'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 16.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+*  ls_fieldcat-fieldname = 'ZTERM'.
+  ls_fieldcat-fieldname = 'TEXT1'.
+  ls_fieldcat-seltext_l = 'Tipo_Pago'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 10.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'MEINS'.
+  ls_fieldcat-seltext_l = 'Unid COMPRA'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 4.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'NETPR'.
+  ls_fieldcat-seltext_l = 'Precio'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 13.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'WAERS'.
+  ls_fieldcat-seltext_l = 'MONEDA'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 5.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'PEINH'.
+  ls_fieldcat-seltext_l = 'Cantida base'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 5.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'MENGE'.
+  ls_fieldcat-seltext_l = 'Cantidad de compra'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 8.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+*  ls_fieldcat-fieldname = 'CANTIDADDEREPARTE'.
+*  ls_fieldcat-seltext_l = 'cantidad de reparto'.
+*  ls_fieldcat-just = 'C'.
+*  ls_fieldcat-outputlen = 13.
+*  append ls_fieldcat to gt_fieldcat.
+*  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'CANT_RECIBIDA'.
+  ls_fieldcat-seltext_l = 'Cant_Recibida'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 13.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'SALDO_PENDIENTE'.
+  ls_fieldcat-seltext_l = 'Saldo_Pendiente'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 13.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'CANT_FACTURADA'.
+  ls_fieldcat-seltext_l = 'Cant_Facturada'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 13.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'CANT_RECHAZADA'.
+  ls_fieldcat-seltext_l = 'Cant_Rechazada'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 13.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'MARCAIGV'.
+  ls_fieldcat-seltext_l = 'Marca IGV'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 3.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'IGV_ITEM'.
+  ls_fieldcat-seltext_l = 'IGV_ITEM'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 13.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'VALOR'.
+  ls_fieldcat-seltext_l = 'Valor'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 13.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'VALORTOTAL'.
+  ls_fieldcat-seltext_l = 'Valor Total'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 13.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'TIPO_DE_CAMBIO'.
+  ls_fieldcat-seltext_l = 'Tipo_de_Cambio'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 6.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'VALORENSOLES'.
+  ls_fieldcat-seltext_l = 'valor en soles'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 13.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'INCO1'.
+  ls_fieldcat-seltext_l = 'Incoterms'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 5.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'FECHA_ENTREGA'.
+  ls_fieldcat-seltext_l = 'Fecha_Entrega'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 12.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'FECHAENTREGAESTADISTICA'.
+  ls_fieldcat-seltext_l = 'Fecha entrega estadistica'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 12.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'FECHADEINGRESO'.
+  ls_fieldcat-seltext_l = 'Fecha de ingreso'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 12.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'REFERENCIAGUIA'.
+  ls_fieldcat-seltext_l = 'Referencia guia'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 18.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'WERKS'.
+  ls_fieldcat-seltext_l = 'CENTRO'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 5.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'COMPRADOR'.
+  ls_fieldcat-seltext_l = 'Comprador'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 8.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'EKGRP'.
+  ls_fieldcat-seltext_l = 'GRUPO DE COMPRA'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 6.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+
+  ls_fieldcat-fieldname = 'BEDNR'.
+  ls_fieldcat-seltext_l = 'N° Nec.'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 30.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'TEXTODESUMINISTRO'.
+  ls_fieldcat-seltext_l = 'Texto de posición'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 30.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+*  ls_fieldcat-fieldname = 'fec_enviooc'.
+*  ls_fieldcat-seltext_l = 'fec_envio oc'.
+*  ls_fieldcat-just = 'c'.
+*  ls_fieldcat-outputlen = 12.
+*  append ls_fieldcat to gt_fieldcat.
+*  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'ESTADODELMATERIAL'.
+  ls_fieldcat-seltext_l = 'Estado del material'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 15.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'HES'.
+  ls_fieldcat-seltext_l = 'HES'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 13.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'NUMEROFACTURASAP_MIRO'.
+  ls_fieldcat-seltext_l = 'Número de factura SAP-MIRO'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 18.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'VENCIMIENTOFACTURA'.
+  ls_fieldcat-seltext_l = 'Vencimiento factura'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 12.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+  ls_fieldcat-fieldname = 'PAGO'.
+  ls_fieldcat-seltext_l = 'Pagado'.
+  ls_fieldcat-just = 'C'.
+  ls_fieldcat-outputlen = 4.
+  append ls_fieldcat to gt_fieldcat.
+  clear ls_fieldcat.
+
+
+endform.
+*&---------------------------------------------------------------------*
+*& Form display_alv
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+form display_alv .
+  data: ls_repid type sy-repid.
+  ls_repid = sy-repid.
+  call function 'REUSE_ALV_GRID_DISPLAY'
+    exporting
+      i_callback_program       = ls_repid
+      i_callback_pf_status_set = 'SET_PF_STATUS'
+      i_callback_user_command  = 'ALV_USER_COMAND'
+      "i_callback_html_top_of_page = 'HTML_TOP_OF_PAGE '
+      it_events                = gt_events
+*     is_layout                = gs_layout
+      it_fieldcat              = gt_fieldcat
+    tables
+      t_outtab                 = gt_estructura
+    exceptions
+      program_error            = 1
+      others                   = 2.
+
+  if sy-subrc <> 0.
+    message id sy-msgid type sy-msgty number sy-msgno
+       with sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+  endif.
+endform.
+*&---------------------------------------------------------------------*
+*& Form add_event
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+form set_pf_status using rt_extab type slis_t_extab.
+  set pf-status 'REPORT_STATUS'.
+endform.
+form add_event .
+
+  data: ls_event type slis_alv_event.
+  ls_event-name = 'TOP_OF_PAGE'.
+  ls_event-form = 'TOP_OF_PAGE'.
+  append ls_event to gt_events.
+
+endform.
+
+
+form top_of_page.
+  data: lt_list_commentary type slis_t_listheader,
+        ls_list_commentary type slis_listheader.
+
+  ls_list_commentary-typ = 'H'.
+  ls_list_commentary-info = 'REPORTE DE COMPRAS - MEDIFARMA'.
+  append ls_list_commentary to lt_list_commentary.
+
+  ls_list_commentary-typ = 'S'.
+  concatenate 'User:' sy-uname into ls_list_commentary-info separated by space.
+  append ls_list_commentary to lt_list_commentary.
+
+  ls_list_commentary-typ = 'S'.
+  concatenate 'Date:' sy-datum into ls_list_commentary-info separated by space.
+  append ls_list_commentary to lt_list_commentary.
+
+
+
+
+  call function 'REUSE_ALV_COMMENTARY_WRITE'
+    exporting
+      it_list_commentary = lt_list_commentary.
+
+
+endform.
+*&---------------------------------------------------------------------*
+*& Form get_data2
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+form get_data .
+  data: lv_data type c,
+        days    type  t5a4a-dlydy.
+  data: t_lines like tline occurs 0 with header line.
+  data: lc_name type thead-tdname.
+  constants : lv_igv type c length 4 value '0.18'.
+  constants : lc_101 type mseg-bwart value '101'.
+  constants : lc_122 type mseg-bwart value '122'.
+  field-symbols : <fs_estruc> like line of  gt_estructura .
+  data : lv_pendiente  type ekpo-menge.
+  types : begin of gty_ekko,
+            bukrs    type ekko-bukrs,
+            ebeln    type ekko-ebeln,
+            ekorg    type ekko-ekorg,
+            bedat    type ekko-bedat,
+            lifnr    type ekko-lifnr,
+            bsart    type ekko-bsart,
+            aedat    type ekpo-aedat,
+            frgke    type ekko-frgke,
+            loekz    type ekpo-loekz,
+            ebelp    type ekpo-ebelp,
+            kostl    type ekpo-kostl,
+            matnr    type ekpo-matnr,
+            txz01    type ekpo-txz01,
+            matkl    type ekpo-matkl,
+            ernam    type ekko-ernam,
+            werks    type ekpo-werks,
+            banfn    type ekpo-banfn,
+            bnfpo    type ekpo-bnfpo,
+            afnam    type ekpo-afnam,
+            zterm    type ekko-zterm,
+            meins    type ekpo-meins,
+            netpr    type ekpo-netpr,
+            waers    type ekko-waers,
+            peinh    type ekpo-peinh,
+            menge    type ekpo-menge,
+            ekgrp    type ekko-ekgrp,
+            mwskz    type ekpo-mwskz,
+            wkurs    type ekko-wkurs,
+            inco1    type ekko-inco1,
+            objectid type cdpos-objectid,
+            bednr    type ekpo-bednr,
+            elikz    type ekpo-elikz,
+          end of gty_ekko .
+  types : begin of gty_eban,
+            banfn    type eban-banfn,
+            bnfpo    type eban-bnfpo,
+            frgdt    type eban-frgdt,
+            badat    type eban-badat,
+            loekz    type eban-loekz,
+            ernam    type eban-ernam,
+            objectid type cdpos-objectid,
+          end of gty_eban .
+  data : lt_data type standard table of gty_ekko .
+  data : lt_eban type standard table of gty_eban .
+
+  select ekko~bukrs,
+         ekko~ebeln ,
+         ekko~ekorg ,
+         ekko~bedat,
+         ekko~lifnr,
+         ekko~bsart,
+         ekpo~aedat,
+         ekko~frgke,
+         ekpo~loekz,
+         ekpo~ebelp,
+         ekpo~kostl,
+         ekpo~matnr,
+         ekpo~txz01,
+         ekpo~matkl,
+         ekko~ernam,
+         ekpo~werks,
+         ekpo~banfn,
+         ekpo~bnfpo,
+         ekpo~afnam,
+         ekko~zterm,
+         ekpo~meins,
+         ekpo~netpr,
+         ekko~waers,
+         ekpo~peinh,
+         ekpo~menge,
+         ekko~ekgrp,
+         ekpo~mwskz,
+         ekko~wkurs,
+         ekko~inco1,
+         ekko~ebeln,
+         ekpo~bednr,
+         ekpo~elikz
+     from ekko
+  inner join ekpo on ( ekko~ebeln  =  ekpo~ebeln )
+  into table @lt_data
+  where ekko~bukrs eq @p_bukrs
+    and ekko~ebeln in @s_ebeln
+    and ekko~ekorg in @s_ekorg
+    and ekko~aedat in @s_aedat
+    and ekko~lifnr in @s_lifnr
+    and ekko~bsart in @s_bsart
+    and ekpo~werks in @s_werks
+    and ekpo~matnr in @s_matnr
+    and ekpo~matkl in @s_matkl
+    and ekko~ernam in @s_ernam
+    .
+
+  if lt_data is not initial.
+    data(lt_dat) = lt_data .
+    delete lt_dat where banfn is initial and bnfpo is initial .
+    "se obtiene la solped por posicion .
+    select banfn,
+           bnfpo,
+           frgdt,
+           badat,
+           loekz,
+           ernam,
+           banfn
+      from eban into table @lt_eban
+      for all entries in @lt_dat
+      where banfn = @lt_dat-banfn and bnfpo = @lt_dat-bnfpo .
+
+    lt_dat = lt_data .
+    delete lt_dat where lifnr is initial .
+    select lifnr,
+           name1,
+           name2,
+           land1
+       from lfa1 into table @data(lt_lfa1)
+      for all entries in @lt_dat
+       where lifnr = @lt_dat-lifnr .
+
+    "se obtienen los movimientos de
+    select ebeln,
+           ebelp,
+           bwart,
+           mblnr,
+           lfbja,
+           lfbnr,
+           bpmng,
+           insmk,
+           mjahr,
+           budat_mkpf,
+           charg
+       from mseg into table @data(lt_mseg)
+      for all entries in @lt_data
+      where ebeln = @lt_data-ebeln and ebelp = @lt_data-ebelp .
+
+    if lt_mseg is not initial.
+      select mblnr,
+         mjahr,
+         frbnr
+     from mkpf into table @data(lt_mkpf)
+    for all entries in @lt_mseg
+    where mblnr = @lt_mseg-mblnr and mjahr = @lt_mseg-mjahr .
+    endif.
+
+    "se obtiene todos el historial de compras
+
+    select ebeln,
+           ebelp,
+           lfbnr,
+           lfgja,
+           belnr,
+           vgabe,
+           gjahr
+        from ekbe into table @data(lt_ekbe)
+      for all entries in @lt_data
+      where ebeln = @lt_data-ebeln and ebelp = @lt_data-ebelp .
+
+
+    select ebeln,
+           ebelp,
+           kostl
+      from ekkn into table @data(lt_ekkn)
+    for all entries in @lt_data
+    where ebeln = @lt_data-ebeln and ebelp = @lt_data-ebelp .
+    if lt_ekkn is not initial.
+      select distinct * from csks into table @data(lt_csks)
+        for all entries in @lt_ekkn
+        where kokrs = 'GMIF'
+        and kostl = @lt_ekkn-kostl.
+    endif.
+
+
+
+
+    "repartos plan de entregas
+    select ebeln,
+           ebelp,
+           eindt,
+           slfdt
+       from eket into table @data(lt_eket)
+    for all entries in @lt_data
+    where ebeln = @lt_data-ebeln and ebelp = @lt_data-ebelp .
+
+    "si la ekbe = 2 es factura de ingreso de mercaderia
+    if lt_ekbe is not initial.
+      "aqui se obtiene las factuas
+      select belnr,
+             gjahr,
+             xblnr,
+             zbd1t,
+             zfbdt ,
+             bukrs
+         from rbkp into table @data(lt_rbkp)
+      for all entries in @lt_ekbe
+        where belnr = @lt_ekbe-belnr and gjahr = @lt_ekbe-gjahr .
+
+      if lt_rbkp is not initial.
+        data : znr_awkey type range of  bkpf-awkey .
+        loop at lt_rbkp assigning field-symbol(<fs_rb>).
+          append value #( sign = 'I' option = 'EQ' low = |{ <fs_rb>-belnr }{ <fs_rb>-gjahr }| ) to znr_awkey .
+        endloop.
+        sort znr_awkey by  low .
+        delete adjacent duplicates from znr_awkey comparing low.
+        select  bukrs , gjahr , belnr , awkey , awtyp  from bkpf into table @data(lt_bkpf)
+          for all entries in @lt_rbkp
+          where bukrs = @lt_rbkp-bukrs
+           and  awtyp = 'RMRP'
+           and  awkey in @znr_awkey .
+
+        if sy-subrc = 0.
+
+          select bukrs , gjahr , belnr  from bsak into table @data(lt_bsak)
+            for all entries in @lt_bkpf
+            where bukrs = @lt_bkpf-bukrs
+              and gjahr = @lt_bkpf-gjahr
+            and   belnr = @lt_bkpf-belnr .
+
+        endif.
+
+
+      endif.
+
+    endif.
+
+
+
+
+
+    select  a~udate , a~objectclas , a~objectid  from cdhdr as a inner join cdpos as b
+      on a~objectclas = b~objectclas and
+         a~objectid   = b~objectid and
+         a~changenr   = b~changenr
+      into table @data(lt_cdpos)
+      for all entries in @lt_data
+      where a~objectclas = 'EINKBELEG'
+        and a~objectid   = @lt_data-objectid
+        and b~fname      = 'FRGKE'
+        and b~value_new  = 'G' .
+
+
+    select distinct * from t052u into table @data(lt_t052u)
+      for all entries in @lt_data
+      where spras = @sy-langu
+      and zterm  = @lt_data-zterm .
+
+  endif.
+
+  if lt_eban is not initial.
+    select  a~udate , a~objectclas , a~objectid  from cdhdr as a inner join cdpos as b
+      on a~objectclas = b~objectclas and
+         a~objectid   = b~objectid and
+         a~changenr   = b~changenr
+      appending table @lt_cdpos
+      for all entries in @lt_eban
+      where a~objectclas = 'BANF'
+        and a~objectid   = @lt_eban-objectid
+        and a~langu   = @sy-langu
+        and b~tabname = 'EBAN'
+        and b~fname      = 'FRGKZ'
+        and b~value_new  = '2' .
+
+
+    "se obtiene nombre de comprador
+    select bname , techdesc    from usr21 inner join adrp on usr21~persnumber = adrp~persnumber
+      into table @data(lt_persona)
+      for all entries in @lt_eban
+      where usr21~bname = @lt_eban-ernam .
+
+  endif.
+  data : lv_tabi  type sy-tabix .
+  data : lv_tabi2 type sy-tabix .
+
+*{ ini @001
+      call function 'SAPGUI_PROGRESS_INDICATOR'
+        exporting
+          percentage = 0
+          text       = 'Iniciando...'.
+* fin @001 }
+
+  loop at lt_data assigning field-symbol(<fs_data>).
+    clear : wa_estructura , lv_tabi ,lv_tabi2.
+    clear :lv_pendiente.
+    assign lt_cdpos[ objectid = <fs_data>-ebeln objectclas = 'EINKBELEG' ] to field-symbol(<fs_cdpos>)   .
+    if <fs_cdpos> is assigned.
+      wa_estructura-fec_enviooc = <fs_cdpos>-udate .
+    endif.
+    unassign <fs_cdpos> .
+    wa_estructura-bukrs = <fs_data>-bukrs .
+    wa_estructura-ekorg = <fs_data>-ekorg .
+    wa_estructura-gjahr = <fs_data>-bedat+0(4) .
+    wa_estructura-monat = <fs_data>-bedat+4(2) .
+    wa_estructura-bsart = <fs_data>-bsart .
+    wa_estructura-ebeln = <fs_data>-ebeln .
+    wa_estructura-aedat = <fs_data>-bedat .
+    wa_estructura-frgke = <fs_data>-frgke .
+    wa_estructura-loekz = <fs_data>-loekz .
+    wa_estructura-bedat = <fs_data>-bedat . "
+    assign lt_eban[ banfn = <fs_data>-banfn  bnfpo = <fs_data>-bnfpo ] to field-symbol(<fs_eban>)   .
+    if <fs_eban> is assigned.
+      wa_estructura-banfn   = <fs_eban>-banfn .
+*      wa_estructura-frgdt   = <fs_eban>-frgdt .
+      assign lt_cdpos[ objectid = <fs_data>-banfn objectclas = 'BANF' ] to <fs_cdpos>   .
+      if <fs_cdpos> is assigned.
+        wa_estructura-frgdt = <fs_cdpos>-udate .
+      endif.
+      assign lt_persona[ bname =  <fs_eban>-ernam ] to field-symbol(<fs_usr>).
+      if sy-subrc = 0.
+        wa_estructura-techdesc   = <fs_usr>-techdesc .
+      endif.
+
+      wa_estructura-badat   = <fs_eban>-badat .
+      wa_estructura-loekz2  = <fs_eban>-loekz.
+      wa_estructura-ernam   = <fs_eban>-ernam.
+    endif.
+    unassign <fs_eban>.
+    wa_estructura-lifnr = <fs_data>-lifnr.
+    assign lt_lfa1[ lifnr = <fs_data>-lifnr  ] to field-symbol(<fs_lfa1>).
+    if <fs_lfa1> is assigned .
+      concatenate <fs_lfa1>-name1 <fs_lfa1>-name2 into  wa_estructura-name separated by space.
+      wa_estructura-land1 = <fs_lfa1>-land1 .
+    endif.
+    unassign <fs_lfa1>.
+    wa_estructura-ebelp   = <fs_data>-ebelp .
+    assign lt_ekkn[ ebeln = <fs_data>-ebeln ebelp = <fs_data>-ebelp  ] to field-symbol(<fs_ekkn>).
+    if <fs_ekkn> is assigned .
+      wa_estructura-kostl   = <fs_ekkn>-kostl .
+    endif.
+    wa_estructura-matnr  = |{ <fs_data>-matnr   alpha = out }|.
+    wa_estructura-txz01   = <fs_data>-txz01 .
+    wa_estructura-matkl   = <fs_data>-matkl .
+    wa_estructura-ernam   = <fs_data>-ernam .
+    wa_estructura-comprador = <fs_data>-ernam .
+    wa_estructura-afnam   = <fs_data>-afnam .
+    wa_estructura-zterm   = <fs_data>-zterm .
+    assign lt_t052u[ zterm = <fs_data>-zterm   ] to field-symbol(<fs_t052u>).
+    if <fs_t052u> is  assigned.
+      wa_estructura-text1 = <fs_t052u>-text1 .
+    endif.
+    wa_estructura-meins   = <fs_data>-meins .
+    wa_estructura-netpr   = <fs_data>-netpr .
+    wa_estructura-waers   = <fs_data>-waers .
+    wa_estructura-peinh   = <fs_data>-peinh .
+    wa_estructura-menge   = <fs_data>-menge .
+    wa_estructura-werks   = <fs_data>-werks .
+    wa_estructura-ekgrp   = <fs_data>-ekgrp .
+    assign lt_eket[ ebeln = <fs_data>-ebeln  ebelp = <fs_data>-ebelp ] to field-symbol(<fs_eket>).
+    if sy-subrc = 0.
+      wa_estructura-fecha_entrega           =      <fs_eket>-eindt .
+      wa_estructura-fechaentregaestadistica =      <fs_eket>-slfdt .
+    endif.
+    unassign <fs_eket>.
+
+
+    clear : lc_name .
+    free: t_lines .
+    lc_name = <fs_data>-ebeln && <fs_data>-ebelp.
+    refresh t_lines.
+*    call function 'READ_TEXT'
+*      exporting
+*        id                      = 'F01'
+*        language                = sy-langu
+*        name                    = lc_name
+*        object                  = 'EKPO'
+**       ARCHIVE_HANDLE          = 0
+**       LOCAL_CAT               = ' '
+**        IMPORTING
+**       HEADER                  =
+**       OLD_LINE_COUNTER        =
+*      tables
+*        lines                   = t_lines
+*      exceptions
+*        id                      = 1
+*        language                = 2
+*        name                    = 3
+*        not_found               = 4
+*        object                  = 5
+*        reference_check         = 6
+*        wrong_access_to_archive = 7
+*        others                  = 8.
+*    if sy-subrc = 0.
+*      loop at t_lines.
+*        concatenate wa_estructura-textodesuministro t_lines-tdline  into wa_estructura-textodesuministro separated by space .
+*      endloop.
+*    endif.
+    clear: lv_data .
+    assign lt_ekbe[  ebeln = <fs_data>-ebeln  ebelp = <fs_data>-ebelp vgabe = '9'] to field-symbol(<fs_ekbee>).
+    if <fs_ekbee> is not assigned.
+      assign lt_ekbe[  ebeln = <fs_data>-ebeln  ebelp = <fs_data>-ebelp vgabe = 'S'] to <fs_ekbee>.
+    endif.
+    if <fs_ekbee> is assigned.
+      clear:lv_pendiente .
+      clear: lv_tabi .
+      loop at lt_ekbe  assigning <fs_ekbee>  where ebeln = <fs_data>-ebeln and  ebelp = <fs_data>-ebelp  and ( vgabe = '9' or vgabe = 'S' ) .
+        wa_estructura-hes = <fs_ekbee>-belnr .
+        clear: lv_data .
+        loop at lt_mseg assigning field-symbol(<fs_mseg>) where ebeln = <fs_data>-ebeln+0(10) and ebelp = <fs_data>-ebelp+0(5) and  bwart+0(3) = lc_101 and lfbnr =  <fs_ekbee>-belnr ."'101'.
+          lv_data = 'X' .
+          lv_tabi = lv_tabi + 1.
+          if lv_tabi = 1 .
+          else.
+            clear : wa_estructura-menge .
+          endif.
+          clear : wa_estructura-cantidaddereparte, wa_estructura-cant_recibida,wa_estructura-cant_rechazada,wa_estructura-saldo_pendiente,wa_estructura-cant_facturada,
+          wa_estructura-marcaigv ,   wa_estructura-igv_item ,
+          wa_estructura-valor         ,
+          wa_estructura-valortotal    ,
+          wa_estructura-tipo_de_cambio ,
+          wa_estructura-valorensoles  ,
+          wa_estructura-numerofacturasap_miro ,
+          wa_estructura-vencimientofactura ,
+          wa_estructura-referenciaguia,
+          wa_estructura-pago .
+
+          assign lt_mkpf[ mblnr = <fs_mseg>-mblnr  mjahr = <fs_mseg>-mjahr ] to field-symbol(<fs_mkpf>).
+          if <fs_mkpf> is assigned .
+            wa_estructura-referenciaguia = <fs_mkpf>-frbnr .
+          endif.
+          unassign <fs_mkpf> .
+          wa_estructura-cantidaddereparte = <fs_mseg>-bpmng .
+          loop at lt_mseg assigning field-symbol(<fs_mseg2>) where ebeln = <fs_data>-ebeln+0(10) and ebelp = <fs_data>-ebelp+0(5) and bwart = lc_122  and lfbnr = <fs_mseg>-mblnr+0(10) and lfbja = <fs_mseg>-mjahr+0(4).
+            wa_estructura-cant_recibida = <fs_mseg2>-bpmng +  wa_estructura-cant_recibida.
+          endloop.
+          wa_estructura-cant_rechazada = wa_estructura-cant_recibida.
+          wa_estructura-cant_recibida = wa_estructura-cantidaddereparte - wa_estructura-cant_recibida .
+          wa_estructura-saldo_pendiente = wa_estructura-cantidaddereparte  - wa_estructura-cant_recibida .
+          wa_estructura-cant_facturada = wa_estructura-cant_recibida.
+          wa_estructura-fechadeingreso = <fs_mseg>-budat_mkpf.
+          if <fs_data>-mwskz = 'C1'.
+            wa_estructura-marcaigv = 'SI' .
+            wa_estructura-igv_item =  wa_estructura-cant_recibida *  wa_estructura-netpr * lv_igv .
+          else.
+            wa_estructura-marcaigv = 'NO' .
+          endif.
+          wa_estructura-valor          =   ( wa_estructura-netpr / wa_estructura-peinh )  * wa_estructura-cant_recibida  .
+          wa_estructura-valortotal     =   wa_estructura-igv_item  + wa_estructura-valor .
+          wa_estructura-tipo_de_cambio =  <fs_data>-wkurs .
+          wa_estructura-valorensoles   = wa_estructura-valortotal * <fs_data>-wkurs .
+          lv_pendiente = lv_pendiente + ( wa_estructura-cantidaddereparte - wa_estructura-cant_rechazada  ) .
+          assign lt_ekbe[ ebeln = <fs_data>-ebeln ebelp = <fs_data>-ebelp lfbnr = wa_estructura-hes vgabe = '2' ] to field-symbol(<fs_ekbe>).
+          if <fs_ekbe> is assigned.
+            assign lt_rbkp[ belnr = <fs_ekbe>-belnr  gjahr = <fs_ekbe>-gjahr ] to field-symbol(<fs_rbkp>) .
+            if <fs_rbkp> is assigned.
+              wa_estructura-numerofacturasap_miro = <fs_rbkp>-xblnr .
+              clear :days.
+              days = <fs_rbkp>-zbd1t .
+              call function 'RP_CALC_DATE_IN_INTERVAL'
+                exporting
+                  date      = <fs_rbkp>-zfbdt
+                  days      = days
+                  months    = 00
+                  signum    = '+'
+                  years     = 00
+                importing
+                  calc_date = wa_estructura-vencimientofactura.
+
+              assign lt_bkpf[ bukrs = <fs_rbkp>-bukrs awkey = |{ <fs_rbkp>-belnr }{ <fs_rbkp>-gjahr }| ]  to field-symbol(<fs_bkpf>).
+              if <fs_bkpf> is assigned.
+                assign lt_bsak[  bukrs = <fs_bkpf>-bukrs   gjahr = <fs_bkpf>-gjahr   belnr = <fs_bkpf>-belnr   ]  to field-symbol(<fs_bsak>).
+                if <fs_bsak> is  assigned .
+                  wa_estructura-pago = 'SI'.
+                else.
+                  wa_estructura-pago = 'NO'.
+                endif.
+                unassign <fs_bsak> .
+              endif.
+              unassign <fs_bkpf> .
+            endif.
+            unassign <fs_rbkp>.
+          endif.
+          unassign <fs_ekbe>.
+          wa_estructura-inco1 = <fs_data>-inco1 .
+          if <fs_mseg>-insmk = 'X' or <fs_mseg>-insmk = '2'.
+            wa_estructura-estadodelmaterial = 'Control calidad'.
+          elseif <fs_mseg>-insmk = 'S' or <fs_mseg>-insmk = '3'.
+            wa_estructura-estadodelmaterial = 'Bloqueado'.
+          elseif <fs_mseg>-insmk = 'F' or <fs_mseg>-insmk = ''.
+            wa_estructura-estadodelmaterial = 'Libre utilización'.
+          endif.
+          wa_estructura-lotesap = <fs_mseg>-charg .
+          append wa_estructura to gt_estructura .
+        endloop.
+        if lv_data is initial.
+          clear : wa_estructura-cantidaddereparte,
+          wa_estructura-cant_recibida,
+          wa_estructura-cant_rechazada,
+          wa_estructura-saldo_pendiente,
+          wa_estructura-cant_facturada,
+          wa_estructura-marcaigv ,
+          wa_estructura-igv_item ,
+          wa_estructura-valor         ,
+          wa_estructura-valortotal    ,
+          wa_estructura-tipo_de_cambio ,
+          wa_estructura-valorensoles  ,
+          wa_estructura-numerofacturasap_miro ,
+          wa_estructura-estadodelmaterial ,
+          wa_estructura-vencimientofactura ,
+          wa_estructura-referenciaguia ,
+          wa_estructura-pago ,
+          wa_estructura-vencimientofactura .
+          wa_estructura-ekgrp = <fs_data>-ekgrp.
+          wa_estructura-inco1 = <fs_data>-inco1.
+          wa_estructura-werks = <fs_data>-werks.
+          wa_estructura-saldo_pendiente = <fs_data>-menge.
+          wa_estructura-tipo_de_cambio = <fs_data>-wkurs.
+          append wa_estructura to gt_estructura .
+        endif.
+      endloop .
+      clear : lv_tabi2.
+      loop at gt_estructura assigning <fs_estruc> where ebeln = <fs_data>-ebeln  and ebelp = <fs_data>-ebelp .
+        lv_tabi2 = lv_tabi2 + 1 .
+        if lv_tabi = lv_tabi2.
+          <fs_estruc>-saldo_pendiente = <fs_data>-menge - lv_pendiente .
+        endif.
+        if <fs_data>-elikz is not initial.
+          <fs_estruc>-saldo_pendiente = '0' .
+        endif.
+      endloop.
+      lv_data = 'X'.
+    else.
+      clear:lv_pendiente , lv_tabi2.
+      loop at lt_mseg assigning <fs_mseg>   where ebeln = <fs_data>-ebeln+0(10) and ebelp = <fs_data>-ebelp+0(5) and bwart+0(3) = lc_101 . "'101'..
+        lv_tabi = lv_tabi + 1.
+        lv_data = 'X' .
+        clear : wa_estructura-cantidaddereparte, wa_estructura-cant_recibida,wa_estructura-cant_rechazada,wa_estructura-saldo_pendiente,wa_estructura-cant_facturada,
+        wa_estructura-marcaigv ,   wa_estructura-igv_item ,
+        wa_estructura-valor         ,
+        wa_estructura-valortotal    ,
+        wa_estructura-tipo_de_cambio ,
+        wa_estructura-valorensoles  ,
+        wa_estructura-numerofacturasap_miro ,
+        wa_estructura-vencimientofactura ,
+        wa_estructura-referenciaguia ,
+        wa_estructura-pago .
+        assign lt_mkpf[ mblnr = <fs_mseg>-mblnr  mjahr = <fs_mseg>-mjahr ] to <fs_mkpf>.
+        if <fs_mkpf> is assigned .
+          wa_estructura-referenciaguia = <fs_mkpf>-frbnr .
+        endif.
+        unassign <fs_mkpf> .
+        wa_estructura-cantidaddereparte = <fs_mseg>-bpmng .
+        wa_estructura-fechadeingreso = <fs_mseg>-budat_mkpf.
+        if lv_tabi = 1 .
+        else.
+          clear : wa_estructura-menge .
+        endif.
+        loop at lt_mseg assigning <fs_mseg2> where ebeln = <fs_data>-ebeln+0(10) and ebelp = <fs_data>-ebelp and bwart = lc_122  and lfbnr = <fs_mseg>-mblnr+0(10) and lfbja = <fs_mseg>-mjahr+0(4).
+          wa_estructura-cant_recibida = <fs_mseg2>-bpmng +  wa_estructura-cant_recibida.
+        endloop.
+        wa_estructura-cant_rechazada = wa_estructura-cant_recibida.
+        wa_estructura-cant_recibida = wa_estructura-cantidaddereparte - wa_estructura-cant_recibida .
+        wa_estructura-saldo_pendiente = wa_estructura-cantidaddereparte  - wa_estructura-cant_recibida .
+        wa_estructura-cant_facturada = wa_estructura-cant_recibida.
+        if <fs_data>-mwskz = 'C1'.
+          wa_estructura-marcaigv = 'SI' .
+          wa_estructura-igv_item =  wa_estructura-cant_recibida *  wa_estructura-netpr * lv_igv .
+
+        else.
+          wa_estructura-marcaigv = 'NO' .
+        endif.
+        wa_estructura-valor =   ( wa_estructura-netpr / wa_estructura-peinh )  * wa_estructura-cant_recibida  .
+        wa_estructura-valortotal =   wa_estructura-igv_item  + wa_estructura-valor .
+        wa_estructura-tipo_de_cambio =  <fs_data>-wkurs .
+        wa_estructura-valorensoles = wa_estructura-valortotal * <fs_data>-wkurs .
+        lv_pendiente = lv_pendiente + ( wa_estructura-cantidaddereparte - wa_estructura-cant_rechazada  ) .
+        assign lt_ekbe[ ebeln = <fs_data>-ebeln ebelp = <fs_data>-ebelp lfbnr = <fs_mseg>-mblnr   lfgja = <fs_mseg>-mjahr vgabe = '2' ] to <fs_ekbe>.
+        if <fs_ekbe> is assigned.
+          assign lt_rbkp[ belnr = <fs_ekbe>-belnr  gjahr = <fs_ekbe>-gjahr ] to <fs_rbkp> .
+          if <fs_rbkp> is assigned .
+            wa_estructura-numerofacturasap_miro = <fs_rbkp>-xblnr .
+            clear :days.
+            days = <fs_rbkp>-zbd1t .
+            call function 'RP_CALC_DATE_IN_INTERVAL'
+              exporting
+                date      = <fs_rbkp>-zfbdt
+                days      = days
+                months    = 00
+                signum    = '+'
+                years     = 00
+              importing
+                calc_date = wa_estructura-vencimientofactura.
+
+            assign lt_bkpf[ bukrs = <fs_rbkp>-bukrs awkey = |{ <fs_rbkp>-belnr }{ <fs_rbkp>-gjahr }| ]  to <fs_bkpf>.
+            if <fs_bkpf> is assigned.
+              assign lt_bsak[  bukrs = <fs_bkpf>-bukrs   gjahr = <fs_bkpf>-gjahr   belnr = <fs_bkpf>-belnr   ]  to <fs_bsak>.
+              if <fs_bsak> is  assigned .
+                wa_estructura-pago = 'SI'.
+              else.
+                wa_estructura-pago = 'NO'.
+              endif.
+              unassign <fs_bsak> .
+            endif.
+            unassign <fs_bkpf> .
+
+          endif.
+          unassign <fs_rbkp>.
+        endif.
+        unassign <fs_ekbe>.
+        wa_estructura-inco1 = <fs_data>-inco1 .
+        if <fs_mseg>-insmk = 'X' or <fs_mseg>-insmk = '2'.
+          wa_estructura-estadodelmaterial = 'Control calidad'.
+        elseif <fs_mseg>-insmk = 'S' or <fs_mseg>-insmk = '3'.
+          wa_estructura-estadodelmaterial = 'Bloqueado'.
+        elseif <fs_mseg>-insmk = 'F' or <fs_mseg>-insmk = ''.
+          wa_estructura-estadodelmaterial = 'Libre utilización'.
+        endif.
+
+*
+        wa_estructura-lotesap = <fs_mseg>-charg .
+        append wa_estructura to gt_estructura .
+
+      endloop.
+      clear:lv_tabi2.
+      loop at gt_estructura assigning <fs_estruc> where ebeln = <fs_data>-ebeln  and ebelp = <fs_data>-ebelp .
+        lv_tabi2 = lv_tabi2 + 1 .
+        if lv_tabi = lv_tabi2.
+          <fs_estruc>-saldo_pendiente = <fs_data>-menge - lv_pendiente .
+        endif.
+
+        if <fs_data>-elikz is not initial.
+          <fs_estruc>-saldo_pendiente = '0' .
+        endif.
+      endloop.
+    endif.
+    unassign <fs_eket>.
+    unassign <fs_ekbee>.
+
+
+    if lv_data is initial.
+      wa_estructura-ekgrp = <fs_data>-ekgrp.
+      wa_estructura-inco1 = <fs_data>-inco1.
+      wa_estructura-werks = <fs_data>-werks.
+      wa_estructura-saldo_pendiente = <fs_data>-menge.
+      wa_estructura-tipo_de_cambio = <fs_data>-wkurs.
+      if <fs_data>-elikz is not initial.
+        wa_estructura-saldo_pendiente = '0' .
+      endif.
+      append wa_estructura to gt_estructura .
+    endif.
+*{ini @001
+*    call function 'SAPGUI_PROGRESS_INDICATOR'
+*      exporting
+*        percentage = 50
+*        text       = 'Procesando información'.
+* fin @001 }
+  endloop.
+*{ ini @001
+      call function 'SAPGUI_PROGRESS_INDICATOR'
+        exporting
+          percentage = 100
+          text       = 'Finalizado...'.
+*{ fin @001
+endform.
+
+"{ 001
+FORM %MOVE USING TARGET TYPE ANY
+                 SOURCE TYPE ANY.
+
+DATA: L_PROGRAM LIKE SY-REPID,
+      L_TARGET(1000).
+
+  "IF SOURCE(1) = '&'.
+    L_PROGRAM = SY-REPID.
+    CALL FUNCTION 'SSFRT_SYMBOL_VALUE'
+         EXPORTING  I_PROGRAM      = L_PROGRAM
+                    I_SYMBOLNAME   = SOURCE
+                    I_MOVE_LOGIC   = 'X'
+         IMPORTING  O_SYMBOL_VALUE = L_TARGET
+         EXCEPTIONS OTHERS         = 1.
+    IF SY-SUBRC <> 0.
+      PERFORM RESET_ALL IN PROGRAM SAPLSTXBC.
+      RAISE ERROR.
+    ENDIF.
+    TARGET = L_TARGET.
+  "ELSE.
+  "  TARGET = SOURCE.
+  "ENDIF.
+
+ENDFORM.
+" 001}
+
+form alv_user_comand using pl_ucomm like sy-ucomm       "#EC CALLED ALV
+                        pi_selfield type slis_selfield. "#EC NEEDED ALV
+
+
+  case pl_ucomm.
+  endcase.
+
+  clear pl_ucomm.
+
+endform. " ALV_user_comand
