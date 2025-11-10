@@ -1,0 +1,2517 @@
+*&---------------------------------------------------------------------*
+*& Report  ZPP_MONITOR_ATP_CELIMA
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+
+REPORT zpp_monitor_atp_celima.
+*&---------------------------------------------------------------------*
+*&      TABLAS
+*&---------------------------------------------------------------------*
+
+TABLES: mara,marc,s700e.
+
+*&---------------------------------------------------------------------*
+*&      Types
+*&---------------------------------------------------------------------*
+
+TYPES: BEGIN OF ty_alv1,
+*        zmodelo  TYPE mara-matnr,    "Modelo
+*        maktx2   TYPE makt-maktx,     "Desc. modelo.
+        bukrs    TYPE t001-bukrs,
+        prgrp    TYPE s700e-prgrp,
+        matnr    TYPE mara-matnr,    "Material
+        maktx    TYPE makt-maktx,    "Descripción
+        id       TYPE icon-id,
+        meins    TYPE mara-meins,    "UM
+        labst1010    TYPE mard-labst,    "Stock global 1010
+        labst1091    TYPE mard-labst,    "Stock global 1091
+        labst1020    TYPE mard-labst,    "Stock global 1020
+        atp1010      TYPE mard-labst,    "Stock ATP 1010
+        atp1091      TYPE mard-labst,    "Stock ATP 1091
+        atp1020      TYPE mard-labst,    "Stock ATP 1020
+        nec_p1010 TYPE pbed-plnmg, "Necesidad pendiente 1010
+        nec_p1020 TYPE pbed-plnmg, "Necesidad pendiente 1020
+        nec_p1091 TYPE pbed-plnmg, "Necesidad pendiente 1091
+        saldo    TYPE mseg-menge,    "Saldo stock
+        werks_f  TYPE marc-werks,
+        nec_dm1 TYPE mseg-menge,   "Necesidad demanda M
+        nec_cfm1 TYPE mseg-menge,   "Necesidad centro fav M
+        nec_dm2 TYPE mseg-menge,   "Necesidad demanda M
+        nec_cfm2 TYPE mseg-menge,   "Necesidad centro fav M
+        nec_dm3 TYPE mseg-menge,   "Necesidad demanda M
+        nec_cfm3 TYPE mseg-menge,   "Necesidad centro fav M
+        nec_dm4 TYPE mseg-menge,   "Necesidad demanda M
+        nec_cfm4 TYPE mseg-menge,   "Necesidad centro fav M
+        nec_dm5 TYPE mseg-menge,   "Necesidad demanda M
+        nec_cfm5 TYPE mseg-menge,   "Necesidad centro fav M
+        nec_dm6 TYPE mseg-menge,   "Necesidad demanda M
+        nec_cfm6 TYPE mseg-menge,   "Necesidad centro fav M
+****Se adiciona centros de TREBOL
+        labst2010    TYPE mard-labst,    "Stock global 2010
+        labst2020    TYPE mard-labst,    "Stock global 2020
+        atp2010      TYPE mard-labst,    "Stock ATP 2010
+        atp2020      TYPE mard-labst,    "Stock ATP 2020
+        nec_p2010 TYPE pbed-plnmg, "Necesidad pendiente 2010
+        nec_p2020 TYPE pbed-plnmg, "Necesidad pendiente 2020
+****Se adiciona centros de TREBOL
+       END OF ty_alv1,
+       BEGIN OF ty_matnr,
+         matnr TYPE marc-matnr,
+         werks TYPE marc-werks,
+         dispo TYPE marc-dispo,
+         END OF ty_matnr,
+       BEGIN OF ty_mard,
+         matnr TYPE mard-matnr,
+         werks TYPE mard-werks,
+         lgort TYPE mard-lgort,
+         labst TYPE mard-labst,
+         umlme TYPE mard-umlme,
+         insme TYPE mard-insme,
+       END OF ty_mard,
+       BEGIN OF ty_pbim,
+         matnr TYPE pbim-matnr,
+         werks TYPE pbim-werks,
+         bedae TYPE pbim-bedae,
+         versb TYPE pbim-versb,
+         pbdnr TYPE pbim-pbdnr,
+         vervs TYPE pbim-vervs,
+*         versb TYPE pbim-versb,
+*         bedae TYPE pbim-bedae,
+*         pbdnr TYPE pbim-pbdnr,
+         bdzei TYPE pbim-bdzei,
+       END OF ty_pbim,
+       BEGIN OF ty_pbed,
+         bdzei TYPE pbed-bdzei,
+         pdatu TYPE pbed-pdatu,
+         meins TYPE pbed-meins,
+         plnmg TYPE pbed-plnmg,
+         entmg TYPE pbed-entmg,
+       END OF ty_pbed,
+       BEGIN OF ty_vbbe,
+         vbeln TYPE vbbe-vbeln,
+         posnr TYPE vbbe-posnr,
+         etenr TYPE vbbe-etenr,
+         matnr TYPE vbbe-matnr,
+         werks TYPE vbbe-werks,
+         omeng TYPE vbbe-omeng,
+         vmeng TYPE vbbe-vmeng,
+       END OF ty_vbbe,
+       BEGIN OF ty_nec_p,
+         matnr TYPE pbim-matnr,
+         werks TYPE pbim-werks,
+         plnmg TYPE pbed-plnmg,
+       END OF ty_nec_p,
+       BEGIN OF ty_maktx,
+         matnr TYPE marc-matnr,
+         maktx TYPE makt-maktx,
+       END OF ty_maktx,
+       BEGIN OF ty_log,
+         id      TYPE icon-id,
+*         zmodelo TYPE mara-matnr,
+         matnr   TYPE mara-matnr,
+         werks   TYPE marc-werks,
+*         zmes(8)  TYPE c,
+*         menge   TYPE mseg-menge,
+         msgtyp  TYPE bdcmsgcoll-msgtyp,
+         msgid   TYPE bdcmsgcoll-msgid,
+         msgnr   TYPE bdcmsgcoll-msgnr,
+         msgv1   TYPE bdcmsgcoll-msgv1,
+       END OF ty_log,
+       BEGIN OF ty_char,
+         matnr      TYPE mara-matnr,
+         charact    TYPE bapi1003_alloc_values_char-charact,
+         value_char TYPE bapi1003_alloc_values_char-value_char,
+       END OF ty_char,
+       BEGIN OF ty_t001l,
+         werks TYPE t001l-werks,
+         lgort TYPE t001l-lgort,
+         diskz TYPE t001l-diskz,
+         END OF ty_t001l,
+         BEGIN OF ty_bapisshdin,   "LV
+           date_type  TYPE  prgrs, "LV
+            req_date  TYPE  edatu, "LV
+            req_qty TYPE  plnmg,   "LV
+            unit  TYPE  meins,     "LV
+            bomexpl TYPE  sernr,   "LV
+            prod_ves  TYPE  verid, "LV
+           END OF ty_bapisshdin.   "LV
+
+TYPES : tty_bapisshdin TYPE STANDARD TABLE OF ty_bapisshdin.
+*&---------------------------------------------------------------------*
+*&      Tipos de datos tablas internas y estructuras
+*&---------------------------------------------------------------------*
+DATA: st_alv1 TYPE ty_alv1,
+      ti_alv1 LIKE STANDARD TABLE OF st_alv1,
+      st_alv1_2 TYPE ty_alv1,
+      ti_alv1_2 LIKE STANDARD TABLE OF st_alv1,
+      st_fcat_log   TYPE slis_fieldcat_alv,
+      ti_fcat_log   LIKE STANDARD TABLE OF st_fcat_log,
+      st_layout_log TYPE slis_layout_alv,
+      st_fcat1    TYPE lvc_s_fcat,
+      ti_fcat1    TYPE lvc_t_fcat,
+      st_log   TYPE ty_log,
+      ti_log   LIKE STANDARD TABLE OF st_log,
+      st_s700 TYPE s700,
+      ti_s700 LIKE STANDARD TABLE OF st_s700,
+      st_mard TYPE ty_mard,
+      ti_mard LIKE STANDARD TABLE OF st_mard,
+      st_mard2 TYPE ty_mard,
+      ti_mard2 LIKE STANDARD TABLE OF st_mard,
+      st_matnr TYPE ty_matnr,
+      ti_matnr LIKE STANDARD TABLE OF st_matnr,
+      st_nec_p TYPE ty_nec_p,
+      ti_nec_p LIKE STANDARD TABLE OF st_nec_p,
+      st_pbim TYPE ty_pbim,
+      ti_pbim LIKE STANDARD TABLE OF st_pbim,
+      ti_pbim00 LIKE STANDARD TABLE OF st_pbim,
+      st_vbbe TYPE ty_vbbe,
+      ti_vbbe LIKE STANDARD TABLE OF st_vbbe,
+      ti_vbbe_ac LIKE STANDARD TABLE OF st_vbbe,
+      st_pbed TYPE ty_pbed,
+      ti_pbed LIKE STANDARD TABLE OF st_pbed,
+      ti_pbed1 LIKE STANDARD TABLE OF st_pbed, "Mes1 actual
+      st_t001l TYPE ty_t001l,
+      ti_t001l LIKE STANDARD TABLE OF st_t001l, "Almacenes no planificables
+      st_s700e TYPE s700e,
+      ti_s700e LIKE STANDARD TABLE OF st_s700e,
+      ti_s700e_mat LIKE STANDARD TABLE OF st_s700e,
+      ti_s700e_cen LIKE STANDARD TABLE OF st_s700e,
+      st_maktx TYPE ty_maktx,
+      ti_maktx LIKE STANDARD TABLE OF st_maktx,
+      st_bapisshdin TYPE ty_bapisshdin,
+      ti_bapisshdin LIKE STANDARD TABLE OF st_bapisshdin.
+
+*&---------------------------------------------------------------------*
+*&  Objetos globales
+*&---------------------------------------------------------------------*
+DATA: o_ccmain TYPE REF TO cl_gui_custom_container,
+      o_cc_alv      TYPE REF TO cl_gui_container,
+      o_alv_grid1        TYPE REF TO cl_gui_alv_grid.
+DATA: lt_exclude TYPE ui_functions,
+      lw_layout  TYPE lvc_s_layo,
+      lw_varian  TYPE disvariant.
+
+RANGES: r_spmon FOR s700-spmon,
+        r_spmon_m1 FOR s700-spmon, "MES ACTUAL
+        r_fecha1 FOR sy-datum,
+        r_fecha FOR sy-datum.
+DATA: gl_mensaje TYPE string,
+           gl_ans     TYPE c,
+           gl_tabix TYPE sy-tabix.
+DATA: st_char TYPE ty_char,
+            ti_char LIKE STANDARD TABLE OF st_char.
+DATA: s_caract_char TYPE bapi1003_alloc_values_char,
+      s_caract_num  TYPE  bapi1003_alloc_values_num,
+      s_caract_curr TYPE  bapi1003_alloc_values_curr.
+DATA: BEGIN OF i_requirements_schedule_in OCCURS 0.
+        INCLUDE STRUCTURE bapisshdin.
+DATA: END OF i_requirements_schedule_in.
+DATA: BEGIN OF i_requirements_schedule_in2 OCCURS 0.
+        INCLUDE STRUCTURE bapisshdin.
+DATA: END OF i_requirements_schedule_in2.
+DATA: BEGIN OF i_requirements_schedule_in3 OCCURS 0.
+        INCLUDE STRUCTURE bapisshdin.
+DATA: END OF i_requirements_schedule_in3.
+DATA: i_bapireturn1 LIKE bapireturn1 OCCURS 0,
+      w_bapireturn1 LIKE bapireturn1.
+DATA: i_caract_char LIKE STANDARD TABLE OF s_caract_char,
+      i_caract_num  LIKE STANDARD TABLE OF  s_caract_num,
+      i_caract_curr LIKE STANDARD TABLE OF  s_caract_curr.
+DATA: req_data LIKE bapisshdin OCCURS 0 WITH HEADER LINE,
+      req_data2 LIKE bapisshdin OCCURS 0 WITH HEADER LINE,
+      req_data3 LIKE bapisshdin OCCURS 0 WITH HEADER LINE.
+DATA: return LIKE bapireturn1 OCCURS 0 WITH HEADER LINE.
+DATA: w_bapisitemr LIKE bapisitemr.
+DATA: gl_werks TYPE marc-werks. "LV
+FIELD-SYMBOLS: <fs_alv> TYPE ty_alv1.
+CONSTANTS: c_i TYPE icon-id VALUE '@08@', " Success
+           c_w TYPE icon-id VALUE '@09@', " Warning
+           c_e TYPE icon-id VALUE '@0A@'. " Error
+RANGES: r_werks FOR t001w-werks.
+DATA: gl_atp1010 TYPE mard-labst,
+      gl_atp1020 TYPE mard-labst,
+      gl_atp2010 TYPE mard-labst,
+      gl_atp2020 TYPE mard-labst,
+      gl_atp1091 TYPE mard-labst.
+
+*----------------------------------------------------------------------*
+*        PARÁMETROS DE SELECCIÓN                                       *
+*----------------------------------------------------------------------*
+SELECTION-SCREEN BEGIN OF BLOCK b01 WITH FRAME TITLE text-b01.
+PARAMETERS: p_bukrs TYPE t001-bukrs OBLIGATORY DEFAULT '1000'.
+SELECT-OPTIONS:
+    s_forma   FOR  s700e-prgrp,       "Modelo(grupo de productos)
+    s_matnr    FOR  mara-matnr,       "Número de material
+    s_dispo    FOR marc-dispo.
+PARAMETERS: p_re TYPE t158-prreg OBLIGATORY DEFAULT 'PP'.
+SELECTION-SCREEN END OF BLOCK b01.
+
+START-OF-SELECTION.
+  PERFORM selecciona_datos.
+  PERFORM procesa_datos.
+  PERFORM muestra_datos.
+*&---------------------------------------------------------------------*
+*&      Form  SELECCIONA_DATOS
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM selecciona_datos .
+  DATA: l_perio TYPE numc2,
+          l_anio  TYPE numc4,
+          l_datum TYPE sy-datum.
+*  CLEAR:s_opt.
+*  s_opt-dismode = 'N'.
+*  s_opt-defsize = 'X'.
+*  s_opt-updmode = 'S'.
+*  s_opt-nobinpt = 'X'.
+*  s_opt-racommit = 'X'.
+  REFRESH:r_spmon,ti_alv1,ti_char,r_spmon_m1,r_fecha1.
+*Se obtiene el periodo actual
+  CLEAR:r_spmon_m1.
+  r_spmon_m1-sign = 'I'.
+  r_spmon_m1-option = 'EQ'.
+  r_spmon_m1-low+0(4) = sy-datum+0(4).
+  r_spmon_m1-low+4(2) = sy-datum+4(2).
+*  r_spmon_m1-high+0(4) = sy-datum+0(4).
+*  r_spmon_m1-high+4(2) = sy-datum+4(2).
+  APPEND r_spmon_m1.
+  CLEAR:r_fecha1.
+  r_fecha1-sign = 'I'.
+  r_fecha1-option = 'BT'.
+  r_fecha1-low = sy-datum.
+  r_fecha1-low+6(2) = '01'.
+  CALL FUNCTION 'HR_HCP_GET_LAST_DAY_OF_MONTH'
+    EXPORTING
+      im_date              = r_fecha1-low
+    IMPORTING
+*     EX_DATE_IS_MONTHEND  =
+      ex_last_day_of_month = r_fecha1-high.
+  APPEND r_fecha1.
+  CLEAR:l_perio,l_anio.
+  IF sy-datum+4(2) EQ '12'.
+    l_perio = '01'.
+    l_anio = sy-datum+0(4) + 1.
+  ELSE.
+    l_perio = sy-datum+4(2) + 1.
+    l_anio  = sy-datum+0(4).
+  ENDIF.
+  CLEAR:r_spmon.
+  r_spmon-sign = 'I'.
+  r_spmon-option = 'EQ'.
+  r_spmon-low+0(4) = l_anio.
+  r_spmon-low+4(2) = l_perio.
+  r_spmon-high+0(4) = l_anio.
+  r_spmon-high+4(2) = l_perio.
+  APPEND r_spmon.
+  CLEAR:l_datum.
+  l_datum+4(2) = l_perio.
+  l_datum+0(4) = l_anio.
+  l_datum+6(2) = '01'.
+  DO 5 TIMES.
+    IF l_perio GT 12.
+      ADD 1 TO l_anio.
+      l_perio = 1.
+    ELSE.
+      ADD 1 TO l_perio.
+    ENDIF.
+    CLEAR:r_spmon.
+    r_spmon-sign = 'I'.
+    r_spmon-option = 'EQ'.
+    r_spmon-low+0(4) = l_anio.
+    r_spmon-low+4(2) = l_perio.
+    r_spmon-high+0(4) = l_anio.
+    r_spmon-high+4(2) = l_perio.
+    APPEND r_spmon.
+  ENDDO.
+  REFRESH:ti_s700e,ti_s700e_cen,ti_matnr.
+  SELECT *  INTO TABLE ti_s700e
+      FROM s700e
+    WHERE bukrs EQ p_bukrs
+      AND prgrp IN s_forma
+      AND matnr IN s_matnr.
+  ti_s700e_cen[] = ti_s700e[].
+  DELETE ti_s700e WHERE werks NE space.
+  DELETE ti_s700e_cen WHERE werks EQ space.
+  REFRESH:ti_s700e_mat.
+  SELECT * INTO TABLE ti_s700
+  FROM s700
+    WHERE vrsio EQ 'A00'
+    AND spmon IN r_spmon
+    AND bukrs EQ p_bukrs
+    AND prgrp IN s_forma.
+  DELETE ti_s700e WHERE matnr EQ space.
+  ti_s700e_mat[] = ti_s700e[].
+  SORT ti_s700e_mat BY matnr.
+  DELETE ADJACENT DUPLICATES FROM ti_s700e_mat COMPARING matnr.
+  IF NOT ti_s700e_cen[] IS INITIAL.
+    SELECT matnr werks dispo
+      INTO TABLE ti_matnr
+      FROM marc FOR ALL ENTRIES IN ti_s700e_cen
+      WHERE matnr EQ ti_s700e_cen-matnr
+      AND werks EQ ti_s700e_cen-werks
+      AND dispo IN s_dispo.
+    SELECT matnr werks lgort labst umlme insme
+      INTO TABLE ti_mard
+      FROM mard FOR ALL ENTRIES IN ti_s700e_cen
+      WHERE matnr EQ ti_s700e_cen-matnr
+      AND werks EQ ti_s700e_cen-werks.
+    REFRESH:ti_pbim,ti_pbed.
+    SELECT  matnr werks bedae versb pbdnr vervs bdzei
+    INTO TABLE ti_pbim
+    FROM pbim FOR ALL ENTRIES IN ti_s700e_cen
+    WHERE matnr EQ ti_s700e_cen-matnr
+      AND werks EQ ti_s700e_cen-werks.
+*      AND versb = '00'.
+    DELETE ti_pbim WHERE vervs = space.
+    ti_pbim00[] = ti_pbim.
+    DELETE ti_pbim00 WHERE versb NE '00'.
+*    IF NOT ti_pbim[] IS INITIAL.
+*      SELECT bdzei pdatu meins plnmg entmg
+*        INTO TABLE ti_pbed
+*        FROM pbed
+*        FOR ALL ENTRIES IN ti_pbim
+*        WHERE bdzei = ti_pbim-bdzei
+*          AND perxx IN r_spmon.
+*    ENDIF.
+*Se obtiene las necesidades del mes 1 y los pedidos asignados.
+    REFRESH:ti_pbed1.
+    IF NOT ti_pbim[] IS INITIAL.
+      SELECT bdzei pdatu meins plnmg entmg
+        INTO TABLE ti_pbed1
+        FROM pbed
+        FOR ALL ENTRIES IN ti_pbim
+        WHERE bdzei = ti_pbim-bdzei
+          AND pdatu IN r_fecha1.
+*          AND perxx IN r_spmon_m1.
+*Se obtiene los pedidos de ventas del periodo actual
+      IF NOT ti_s700e_cen IS INITIAL.
+        REFRESH:ti_vbbe.
+        SELECT vbeln posnr etenr matnr werks omeng vmeng
+          INTO TABLE ti_vbbe
+          FROM vbbe
+           FOR ALL ENTRIES IN ti_s700e_cen
+         WHERE matnr = ti_s700e_cen-matnr
+           AND werks = ti_s700e_cen-werks
+           AND mbdat IN r_fecha1.
+      ENDIF.
+    ENDIF.
+  ENDIF.
+  REFRESH:ti_maktx.
+  IF NOT ti_s700e_mat IS INITIAL.
+    SELECT matnr maktx INTO TABLE ti_maktx
+      FROM makt FOR ALL ENTRIES IN ti_s700e_mat
+      WHERE matnr EQ ti_s700e_mat-matnr
+      AND spras EQ sy-langu.
+  ENDIF.
+
+*Se obtiene almacenes no planificables
+  REFRESH:r_werks.
+  LOOP AT ti_s700e_cen INTO st_s700e.
+    CLEAR:r_werks.
+    r_werks-option = 'EQ'.
+    r_werks-sign = 'I'.
+    r_werks-low = st_s700e-werks.
+    COLLECT r_werks.
+  ENDLOOP.
+  IF NOT r_werks[] IS INITIAL.
+    SELECT werks lgort diskz
+    INTO TABLE ti_t001l
+      FROM t001l
+      WHERE werks IN r_werks.
+  ENDIF.
+  DELETE ti_t001l WHERE diskz NE '1'.
+ENDFORM. " SELECCIONA_DATOS
+*&---------------------------------------------------------------------*
+*&      Form  PROCESA_DATOS
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM procesa_datos .
+  DATA:l_menge TYPE mseg-menge.
+  REFRESH:ti_mard2,ti_vbbe_ac,ti_nec_p.
+*Se obtiene la cantidad de venta pendiente por entrega del periodo actual
+  LOOP AT ti_vbbe INTO st_vbbe.
+    CLEAR:st_vbbe-vbeln,
+         st_vbbe-posnr,
+         st_vbbe-etenr.
+    COLLECT st_vbbe INTO ti_vbbe_ac.
+  ENDLOOP.
+*Se obtiene la necesidad pendiente del periodo actual
+  LOOP AT ti_pbed1 INTO st_pbed.
+    CLEAR:st_nec_p.
+    READ TABLE ti_pbim INTO st_pbim WITH KEY bdzei = st_pbed-bdzei.
+    IF sy-subrc EQ 0.
+      st_nec_p-matnr = st_pbim-matnr.
+      st_nec_p-werks = st_pbim-werks.
+    ENDIF.
+    st_nec_p-plnmg = st_pbed-plnmg.
+    COLLECT st_nec_p INTO ti_nec_p.
+  ENDLOOP.
+*Se obtiene stock de los almacenes.
+  LOOP AT ti_mard INTO st_mard.
+    READ TABLE ti_t001l INTO st_t001l WITH KEY werks = st_mard-werks
+                                               lgort = st_mard-lgort.
+    IF sy-subrc NE 0.
+* Se verifica que el almacén no se encuentre en tabla de almacenes no planificable
+      CLEAR:st_mard2.
+      st_mard2-matnr = st_mard-matnr.
+      st_mard2-werks = st_mard-werks.
+      st_mard2-labst = st_mard-labst + st_mard-umlme + st_mard-insme.
+      COLLECT st_mard2 INTO ti_mard2.
+    ENDIF.
+  ENDLOOP.
+  LOOP AT ti_s700e INTO st_s700e.
+    CLEAR:st_alv1.
+    st_alv1-bukrs = st_s700e-bukrs.
+    st_alv1-prgrp = st_s700e-prgrp.
+    st_alv1-matnr = st_s700e-matnr.
+    st_alv1-meins = st_s700e-basme.
+    READ TABLE ti_mard2 INTO st_mard2 WITH KEY matnr = st_s700e-matnr
+                                               werks = '1010'.
+    IF sy-subrc EQ 0.
+      st_alv1-labst1010 = st_mard2-labst.
+    ENDIF.
+    READ TABLE ti_mard2 INTO st_mard2 WITH KEY matnr = st_s700e-matnr
+                                               werks = '1020'.
+    IF sy-subrc EQ 0.
+      st_alv1-labst1020 = st_mard2-labst.
+    ENDIF.
+    READ TABLE ti_mard2 INTO st_mard2 WITH KEY matnr = st_s700e-matnr
+                                               werks = '1091'.
+    IF sy-subrc EQ 0.
+      st_alv1-labst1091 = st_mard2-labst.
+    ENDIF.
+****SE agregan centros de trebol
+    READ TABLE ti_mard2 INTO st_mard2 WITH KEY matnr = st_s700e-matnr
+                                               werks = '2010'.
+    IF sy-subrc EQ 0.
+      st_alv1-labst2010 = st_mard2-labst.
+    ENDIF.
+    READ TABLE ti_mard2 INTO st_mard2 WITH KEY matnr = st_s700e-matnr
+                                               werks = '2020'.
+    IF sy-subrc EQ 0.
+      st_alv1-labst2020 = st_mard2-labst.
+    ENDIF.
+*****
+    LOOP AT r_spmon.
+      gl_tabix = sy-tabix.
+      READ TABLE ti_s700 INTO st_s700 WITH KEY spmon = r_spmon-low
+                                               bukrs = st_s700e-bukrs
+                                               prgrp = st_s700e-prgrp
+                                               matnr = st_s700e-matnr.
+      IF sy-subrc EQ 0.
+        CASE gl_tabix.
+          WHEN 1.
+            st_alv1-nec_dm1 = st_s700-absat.
+*            st_alv1-znecf1 = st_s700-produ.
+          WHEN 2.
+            st_alv1-nec_dm2 = st_s700-absat.
+*            st_alv1-znecf2 = st_s700-produ.
+          WHEN 3.
+            st_alv1-nec_dm3 = st_s700-absat.
+*            st_alv1-znecf3 = st_s700-produ.
+          WHEN 4.
+            st_alv1-nec_dm4 = st_s700-absat.
+*            st_alv1-znecf4 = st_s700-produ.
+          WHEN 5.
+            st_alv1-nec_dm5 = st_s700-absat.
+*            st_alv1-znecf5 = st_s700-produ.
+          WHEN 6.
+            st_alv1-nec_dm6 = st_s700-absat.
+*            st_alv1-znecf6 = st_s700-produ.
+        ENDCASE.
+      ENDIF.
+    ENDLOOP.
+    APPEND st_alv1 TO ti_alv1.
+*    st_alv1-maktx
+  ENDLOOP.
+  LOOP AT ti_alv1 ASSIGNING <fs_alv>.
+    READ TABLE ti_maktx INTO st_maktx WITH KEY matnr = <fs_alv>-matnr.
+    IF sy-subrc EQ 0.
+      <fs_alv>-maktx = st_maktx-maktx.
+    ENDIF.
+    PERFORM obtiene_nec_pend USING <fs_alv>-matnr
+                                   '1010'
+                             CHANGING <fs_alv>-nec_p1010.
+
+    PERFORM obtiene_nec_pend USING <fs_alv>-matnr
+                                   '1020'
+                             CHANGING <fs_alv>-nec_p1020.
+    PERFORM obtiene_nec_pend USING <fs_alv>-matnr
+                                   '1091'
+                             CHANGING <fs_alv>-nec_p1091.
+
+    PERFORM obtiene_atp USING <fs_alv>-matnr
+                              '1010'
+                              p_re
+                        CHANGING <fs_alv>-atp1010.
+    PERFORM obtiene_atp USING <fs_alv>-matnr
+                              '1020'
+                              p_re
+                        CHANGING <fs_alv>-atp1020.
+    PERFORM obtiene_atp USING <fs_alv>-matnr
+                              '1091'
+                              p_re
+                        CHANGING <fs_alv>-atp1091.
+****SE agregan centros de TREBOL.
+    PERFORM obtiene_nec_pend USING <fs_alv>-matnr
+                                   '2010'
+                             CHANGING <fs_alv>-nec_p2010.
+
+    PERFORM obtiene_nec_pend USING <fs_alv>-matnr
+                                   '2020'
+                             CHANGING <fs_alv>-nec_p2020.
+    PERFORM obtiene_atp USING <fs_alv>-matnr
+                              '2010'
+                              p_re
+                        CHANGING <fs_alv>-atp2010.
+    PERFORM obtiene_atp USING <fs_alv>-matnr
+                              '2020'
+                              p_re
+                        CHANGING <fs_alv>-atp2020.
+****
+    PERFORM obtiene_centro_fav USING <fs_alv>-matnr
+                              CHANGING <fs_alv>-werks_f.
+
+    CASE <fs_alv>-werks_f.
+      WHEN '1010'.
+*        <fs_alv>-saldo = <fs_alv>-atp1010 - <fs_alv>-nec_p1010.
+        CLEAR: l_menge.
+        l_menge = <fs_alv>-atp1020 - <fs_alv>-nec_p1020.
+        IF l_menge GT 0.
+          <fs_alv>-saldo = <fs_alv>-saldo + l_menge.
+        ENDIF.
+        CLEAR: l_menge.
+        l_menge = <fs_alv>-atp1091 - <fs_alv>-nec_p1091.
+        IF l_menge GT 0.
+          <fs_alv>-saldo = <fs_alv>-saldo + l_menge.
+        ENDIF.
+      WHEN '1020'.
+*        <fs_alv>-saldo = <fs_alv>-atp1020 - <fs_alv>-nec_p1020.
+        CLEAR: l_menge.
+        l_menge = <fs_alv>-atp1010 - <fs_alv>-nec_p1010.
+        IF l_menge GT 0.
+          <fs_alv>-saldo = <fs_alv>-saldo + l_menge.
+        ENDIF.
+        CLEAR: l_menge.
+        l_menge = <fs_alv>-atp1091 - <fs_alv>-nec_p1091.
+        IF l_menge GT 0.
+          <fs_alv>-saldo = <fs_alv>-saldo + l_menge.
+        ENDIF.
+      WHEN '1091'.
+*        <fs_alv>-saldo = <fs_alv>-atp1091 - <fs_alv>-nec_p1091.
+        CLEAR: l_menge.
+        l_menge = <fs_alv>-atp1010 - <fs_alv>-nec_p1010.
+        IF l_menge GT 0.
+          <fs_alv>-saldo = <fs_alv>-saldo + l_menge.
+        ENDIF.
+        CLEAR: l_menge.
+        l_menge = <fs_alv>-atp1020 - <fs_alv>-nec_p1020.
+        IF l_menge GT 0.
+          <fs_alv>-saldo = <fs_alv>-saldo + l_menge.
+        ENDIF.
+***Se agregan centros de trebol.
+      WHEN '2010'.
+        CLEAR: l_menge.
+        l_menge = <fs_alv>-atp2020 - <fs_alv>-nec_p2020.
+        IF l_menge GT 0.
+          <fs_alv>-saldo = <fs_alv>-saldo + l_menge.
+        ENDIF.
+      WHEN '2020'.
+        CLEAR: l_menge.
+        l_menge = <fs_alv>-atp2010 - <fs_alv>-nec_p2010.
+        IF l_menge GT 0.
+          <fs_alv>-saldo = <fs_alv>-saldo + l_menge.
+        ENDIF.
+    ENDCASE.
+****
+*    <fs_alv>-saldo = <fs_alv>-atp1010 + <fs_alv>-atp1020 + <fs_alv>-atp1091.
+  ENDLOOP.
+ENDFORM. " PROCESA_DATOS
+*&---------------------------------------------------------------------*
+*&      Form  MUESTRA_DATOS
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM muestra_datos .
+  CALL SCREEN '100'.
+ENDFORM. " MUESTRA_DATOS
+*&---------------------------------------------------------------------*
+*&      Module  STATUS_0100  OUTPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'ST_100'.
+  SET TITLEBAR 'TB_100'.
+  IF o_ccmain IS INITIAL.
+    PERFORM llena_fieldcat.
+    PERFORM crear_objetos.
+    PERFORM muestra_objetos.
+
+  ELSE.
+    CALL METHOD: o_alv_grid1->refresh_table_display.
+  ENDIF.
+ENDMODULE. " STATUS_0100 OUTPUT
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0100 INPUT.
+  CASE sy-ucomm.
+    WHEN 'EXIT' OR 'CANC' OR 'BACK'.
+      CLEAR:gl_mensaje.
+      CONCATENATE 'No se guardaran los cambios' '¿Desea salir?'
+             INTO gl_mensaje SEPARATED BY space.
+      CALL FUNCTION 'POPUP_TO_CONFIRM'
+        EXPORTING
+          titlebar              = 'Confirmación'
+          text_question         = gl_mensaje
+          icon_button_1         = '1'
+          text_button_1         = 'Si'
+          default_button        = '1'
+          display_cancel_button = 'X'
+          start_column          = 25
+          start_row             = 6
+        IMPORTING
+          answer                = gl_ans
+        EXCEPTIONS
+          text_not_found        = 1
+          OTHERS                = 2.
+      IF gl_ans = '1' AND sy-subrc EQ 0.
+        LEAVE TO SCREEN 0.
+      ENDIF.
+    WHEN 'SAVE'.
+      REFRESH: ti_log.
+      PERFORM genera_necesidad.
+    WHEN 'BT_DISTRIB'.
+      PERFORM distribuye_demanda.
+  ENDCASE.
+ENDMODULE. " USER_COMMAND_0100 INPUT
+*&---------------------------------------------------------------------*
+*&      Form  LLENA_FIELDCAT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM llena_fieldcat .
+  REFRESH:ti_fcat1.
+  DATA: wl_pos TYPE i.
+* Formato
+  ADD 1 TO wl_pos.
+  CLEAR st_fcat1.
+  st_fcat1-col_pos         =  wl_pos.
+  st_fcat1-fieldname       = 'PRGRP'.
+  st_fcat1-tabname         = 'TI_ALV1'.
+  st_fcat1-ref_field       = 'PRGRP'.
+  st_fcat1-ref_table       = 'S700E'.
+  APPEND st_fcat1 TO ti_fcat1.
+* Material
+  ADD 1 TO wl_pos.
+  CLEAR st_fcat1.
+  st_fcat1-col_pos         =  wl_pos.
+  st_fcat1-fieldname       = 'MATNR'.
+  st_fcat1-tabname         = 'TI_ALV1'.
+  st_fcat1-ref_field       = 'MATNR'.
+  st_fcat1-ref_table       = 'MARA'.
+  APPEND st_fcat1 TO ti_fcat1.
+* Descripción
+  ADD 1 TO wl_pos.
+  CLEAR st_fcat1.
+  st_fcat1-col_pos         =  wl_pos.
+  st_fcat1-fieldname       = 'MAKTX'.
+  st_fcat1-tabname         = 'TI_ALV1'.
+  st_fcat1-ref_field       = 'MAKTX'.
+  st_fcat1-ref_table       = 'MAKT'.
+  APPEND st_fcat1 TO ti_fcat1.
+*
+  ADD 1 TO wl_pos.
+  CLEAR st_fcat1.
+  st_fcat1-col_pos         =  wl_pos.
+  st_fcat1-fieldname       = 'MEINS'.
+  st_fcat1-tabname         = 'TI_ALV1'.
+  st_fcat1-ref_field       = 'MEINS'.
+  st_fcat1-ref_table       = 'MARA'.
+  APPEND st_fcat1 TO ti_fcat1.
+  CASE p_bukrs.
+    WHEN '1000'.
+*
+      ADD 1 TO wl_pos.
+      CLEAR st_fcat1.
+      st_fcat1-col_pos         =  wl_pos.
+      st_fcat1-fieldname       = 'LABST1010'.
+      st_fcat1-tabname         = 'TI_ALV1'.
+      st_fcat1-coltext         = 'Stock 1010'.
+      st_fcat1-ref_field       = 'LABST'.
+      st_fcat1-ref_table       = 'MARD'.
+      APPEND st_fcat1 TO ti_fcat1.
+*
+      ADD 1 TO wl_pos.
+      CLEAR st_fcat1.
+      st_fcat1-col_pos         =  wl_pos.
+      st_fcat1-fieldname       = 'LABST1020'.
+      st_fcat1-tabname         = 'TI_ALV1'.
+      st_fcat1-coltext         = 'Stock 1020'.
+      st_fcat1-ref_field       = 'LABST'.
+      st_fcat1-ref_table       = 'MARD'.
+      APPEND st_fcat1 TO ti_fcat1.
+*
+      ADD 1 TO wl_pos.
+      CLEAR st_fcat1.
+      st_fcat1-col_pos         =  wl_pos.
+      st_fcat1-fieldname       = 'LABST1091'.
+      st_fcat1-tabname         = 'TI_ALV1'.
+      st_fcat1-coltext         = 'Stock 1091'.
+      st_fcat1-ref_field       = 'LABST'.
+      st_fcat1-ref_table       = 'MARD'.
+      APPEND st_fcat1 TO ti_fcat1.
+      ADD 1 TO wl_pos.
+      CLEAR st_fcat1.
+      st_fcat1-col_pos         =  wl_pos.
+      st_fcat1-fieldname       = 'NEC_P1010'.
+      st_fcat1-tabname         = 'TI_ALV1'.
+      st_fcat1-coltext         = 'Nec. pend. 1010'.
+      st_fcat1-ref_field       = 'PLNMG'.
+      st_fcat1-ref_table       = 'PBED'.
+      APPEND st_fcat1 TO ti_fcat1.
+      ADD 1 TO wl_pos.
+      CLEAR st_fcat1.
+      st_fcat1-col_pos         =  wl_pos.
+      st_fcat1-fieldname       = 'NEC_P1020'.
+      st_fcat1-tabname         = 'TI_ALV1'.
+      st_fcat1-coltext         = 'Nec. pend. 1020'.
+      st_fcat1-ref_field       = 'PLNMG'.
+      st_fcat1-ref_table       = 'PBED'.
+      APPEND st_fcat1 TO ti_fcat1.
+      ADD 1 TO wl_pos.
+      CLEAR st_fcat1.
+      st_fcat1-col_pos         =  wl_pos.
+      st_fcat1-fieldname       = 'NEC_P1091'.
+      st_fcat1-tabname         = 'TI_ALV1'.
+      st_fcat1-coltext         = 'Nec. pend. 1091'.
+      st_fcat1-ref_field       = 'PLNMG'.
+      st_fcat1-ref_table       = 'PBED'.
+      APPEND st_fcat1 TO ti_fcat1.
+*
+      ADD 1 TO wl_pos.
+      CLEAR st_fcat1.
+      st_fcat1-col_pos         =  wl_pos.
+      st_fcat1-fieldname       = 'ATP1010'.
+      st_fcat1-tabname         = 'TI_ALV1'.
+      st_fcat1-coltext         = 'Stock ATP 1010'.
+      st_fcat1-ref_field       = 'LABST'.
+      st_fcat1-ref_table       = 'MARD'.
+      APPEND st_fcat1 TO ti_fcat1.
+*
+      ADD 1 TO wl_pos.
+      CLEAR st_fcat1.
+      st_fcat1-col_pos         =  wl_pos.
+      st_fcat1-fieldname       = 'ATP1020'.
+      st_fcat1-tabname         = 'TI_ALV1'.
+      st_fcat1-coltext         = 'Stock ATP 1020'.
+      st_fcat1-ref_field       = 'LABST'.
+      st_fcat1-ref_table       = 'MARD'.
+      APPEND st_fcat1 TO ti_fcat1.
+*
+      ADD 1 TO wl_pos.
+      CLEAR st_fcat1.
+      st_fcat1-col_pos         =  wl_pos.
+      st_fcat1-fieldname       = 'ATP1091'.
+      st_fcat1-tabname         = 'TI_ALV1'.
+      st_fcat1-coltext         = 'Stock ATP 1091'.
+      st_fcat1-ref_field       = 'LABST'.
+      st_fcat1-ref_table       = 'MARD'.
+      APPEND st_fcat1 TO ti_fcat1.
+    WHEN '2000'.
+*
+      ADD 1 TO wl_pos.
+      CLEAR st_fcat1.
+      st_fcat1-col_pos         =  wl_pos.
+      st_fcat1-fieldname       = 'LABST2010'.
+      st_fcat1-tabname         = 'TI_ALV1'.
+      st_fcat1-coltext         = 'Stock 2010'.
+      st_fcat1-ref_field       = 'LABST'.
+      st_fcat1-ref_table       = 'MARD'.
+      APPEND st_fcat1 TO ti_fcat1.
+*
+      ADD 1 TO wl_pos.
+      CLEAR st_fcat1.
+      st_fcat1-col_pos         =  wl_pos.
+      st_fcat1-fieldname       = 'LABST2020'.
+      st_fcat1-tabname         = 'TI_ALV1'.
+      st_fcat1-coltext         = 'Stock 2020'.
+      st_fcat1-ref_field       = 'LABST'.
+      st_fcat1-ref_table       = 'MARD'.
+      APPEND st_fcat1 TO ti_fcat1.
+      ADD 1 TO wl_pos.
+      CLEAR st_fcat1.
+      st_fcat1-col_pos         =  wl_pos.
+      st_fcat1-fieldname       = 'NEC_P2010'.
+      st_fcat1-tabname         = 'TI_ALV1'.
+      st_fcat1-coltext         = 'Nec. pend. 2010'.
+      st_fcat1-ref_field       = 'PLNMG'.
+      st_fcat1-ref_table       = 'PBED'.
+      APPEND st_fcat1 TO ti_fcat1.
+      ADD 1 TO wl_pos.
+      CLEAR st_fcat1.
+      st_fcat1-col_pos         =  wl_pos.
+      st_fcat1-fieldname       = 'NEC_P2020'.
+      st_fcat1-tabname         = 'TI_ALV1'.
+      st_fcat1-coltext         = 'Nec. pend. 2020'.
+      st_fcat1-ref_field       = 'PLNMG'.
+      st_fcat1-ref_table       = 'PBED'.
+      APPEND st_fcat1 TO ti_fcat1.
+*
+      ADD 1 TO wl_pos.
+      CLEAR st_fcat1.
+      st_fcat1-col_pos         =  wl_pos.
+      st_fcat1-fieldname       = 'ATP2010'.
+      st_fcat1-tabname         = 'TI_ALV1'.
+      st_fcat1-coltext         = 'Stock ATP 2010'.
+      st_fcat1-ref_field       = 'LABST'.
+      st_fcat1-ref_table       = 'MARD'.
+      APPEND st_fcat1 TO ti_fcat1.
+*
+      ADD 1 TO wl_pos.
+      CLEAR st_fcat1.
+      st_fcat1-col_pos         =  wl_pos.
+      st_fcat1-fieldname       = 'ATP2020'.
+      st_fcat1-tabname         = 'TI_ALV1'.
+      st_fcat1-coltext         = 'Stock ATP 2020'.
+      st_fcat1-ref_field       = 'LABST'.
+      st_fcat1-ref_table       = 'MARD'.
+      APPEND st_fcat1 TO ti_fcat1.
+  ENDCASE.
+
+*
+  ADD 1 TO wl_pos.
+  CLEAR st_fcat1.
+  st_fcat1-col_pos         =  wl_pos.
+  st_fcat1-fieldname       = 'SALDO'.
+  st_fcat1-tabname         = 'TI_ALV1'.
+  st_fcat1-coltext         = 'Saldo ATP - Nec.(No favorito)'.
+  st_fcat1-ref_field       = 'MENGE'.
+  st_fcat1-no_out          = 'X'.
+  st_fcat1-ref_table       = 'MSEG'.
+  APPEND st_fcat1 TO ti_fcat1.
+*
+  ADD 1 TO wl_pos.
+  CLEAR st_fcat1.
+  st_fcat1-col_pos         =  wl_pos.
+  st_fcat1-fieldname       = 'WERKS_F'.
+  st_fcat1-tabname         = 'TI_ALV1'.
+  st_fcat1-coltext         = 'Centro Fav.'.
+  st_fcat1-ref_field       = 'WERKS'.
+  st_fcat1-ref_table       = 'MARD'.
+  APPEND st_fcat1 TO ti_fcat1.
+*
+  ADD 1 TO wl_pos.
+  CLEAR st_fcat1.
+  st_fcat1-col_pos         =  wl_pos.
+  st_fcat1-fieldname       = 'NEC_DM1'.
+  st_fcat1-tabname         = 'TI_ALV1'.
+  READ TABLE r_spmon INDEX 1.
+  IF sy-subrc EQ 0.
+    CONCATENATE 'Nec. dem.' r_spmon-low INTO st_fcat1-coltext SEPARATED BY '/'.
+  ENDIF.
+*  st_fcat1-coltext         = 'Nec. dem. M1'.
+  st_fcat1-ref_field       = 'MENGE'.
+  st_fcat1-ref_table       = 'MSEG'.
+  APPEND st_fcat1 TO ti_fcat1.
+*
+  ADD 1 TO wl_pos.
+  CLEAR st_fcat1.
+  st_fcat1-col_pos         =  wl_pos.
+  st_fcat1-fieldname       = 'NEC_CFM1'.
+  st_fcat1-tabname         = 'TI_ALV1'.
+  CONCATENATE 'Nec. centro.' '/' r_spmon-low+4(2) '.' r_spmon-low+0(4) INTO st_fcat1-coltext.
+*  st_fcat1-coltext         = 'Nec. centro. M1'.
+  st_fcat1-emphasize       = 'X'.
+  st_fcat1-ref_field       = 'MENGE'.
+  st_fcat1-ref_table       = 'MSEG'.
+  APPEND st_fcat1 TO ti_fcat1.
+*
+  ADD 1 TO wl_pos.
+  CLEAR st_fcat1.
+  st_fcat1-col_pos         =  wl_pos.
+  st_fcat1-fieldname       = 'NEC_DM2'.
+  st_fcat1-tabname         = 'TI_ALV1'.
+  READ TABLE r_spmon INDEX 2.
+  IF sy-subrc EQ 0.
+    CONCATENATE 'Nec. dem.' '/' r_spmon-low+4(2) '.' r_spmon-low+0(4) INTO st_fcat1-coltext.
+  ENDIF.
+*  st_fcat1-coltext         = 'Nec. dem. M2'.
+  st_fcat1-ref_field       = 'MENGE'.
+  st_fcat1-ref_table       = 'MSEG'.
+  APPEND st_fcat1 TO ti_fcat1.
+*
+  ADD 1 TO wl_pos.
+  CLEAR st_fcat1.
+  st_fcat1-col_pos         =  wl_pos.
+  st_fcat1-fieldname       = 'NEC_CFM2'.
+  st_fcat1-tabname         = 'TI_ALV1'.
+  CONCATENATE 'Nec. centro.' '/' r_spmon-low+4(2) '.' r_spmon-low+0(4) INTO st_fcat1-coltext.
+*  st_fcat1-coltext         = 'Nec. centro. M2'.
+  st_fcat1-emphasize       = 'X'.
+  st_fcat1-ref_field       = 'MENGE'.
+  st_fcat1-ref_table       = 'MSEG'.
+  APPEND st_fcat1 TO ti_fcat1.
+*
+  ADD 1 TO wl_pos.
+  CLEAR st_fcat1.
+  st_fcat1-col_pos         =  wl_pos.
+  st_fcat1-fieldname       = 'NEC_DM3'.
+  st_fcat1-tabname         = 'TI_ALV1'.
+  READ TABLE r_spmon INDEX 3.
+  IF sy-subrc EQ 0.
+    CONCATENATE 'Nec. dem.' '/' r_spmon-low+4(2) '.' r_spmon-low+0(4) INTO st_fcat1-coltext.
+  ENDIF.
+*  st_fcat1-coltext         = 'Nec. dem. M3'.
+  st_fcat1-ref_field       = 'MENGE'.
+  st_fcat1-ref_table       = 'MSEG'.
+  APPEND st_fcat1 TO ti_fcat1.
+*
+  ADD 1 TO wl_pos.
+  CLEAR st_fcat1.
+  st_fcat1-col_pos         =  wl_pos.
+  st_fcat1-fieldname       = 'NEC_CFM3'.
+  st_fcat1-tabname         = 'TI_ALV1'.
+  CONCATENATE 'Nec. centro.' '/' r_spmon-low+4(2) '.' r_spmon-low+0(4) INTO st_fcat1-coltext.
+*  st_fcat1-coltext         = 'Nec. centro. M3'.
+  st_fcat1-emphasize       = 'X'.
+  st_fcat1-ref_field       = 'MENGE'.
+  st_fcat1-ref_table       = 'MSEG'.
+  APPEND st_fcat1 TO ti_fcat1.
+*
+  ADD 1 TO wl_pos.
+  CLEAR st_fcat1.
+  st_fcat1-col_pos         =  wl_pos.
+  st_fcat1-fieldname       = 'NEC_DM4'.
+  st_fcat1-tabname         = 'TI_ALV1'.
+  READ TABLE r_spmon INDEX 4.
+  IF sy-subrc EQ 0.
+    CONCATENATE 'Nec. dem.' '/' r_spmon-low+4(2) '.' r_spmon-low+0(4) INTO st_fcat1-coltext.
+  ENDIF.
+*  st_fcat1-coltext         = 'Nec. dem. M4'.
+  st_fcat1-ref_field       = 'MENGE'.
+  st_fcat1-ref_table       = 'MSEG'.
+  APPEND st_fcat1 TO ti_fcat1.
+*
+  ADD 1 TO wl_pos.
+  CLEAR st_fcat1.
+  st_fcat1-col_pos         =  wl_pos.
+  st_fcat1-fieldname       = 'NEC_CFM4'.
+  st_fcat1-tabname         = 'TI_ALV1'.
+  CONCATENATE 'Nec. centro.' '/' r_spmon-low+4(2) '.' r_spmon-low+0(4) INTO st_fcat1-coltext.
+*  st_fcat1-coltext         = 'Nec. centro. M4'.
+  st_fcat1-emphasize       = 'X'.
+  st_fcat1-ref_field       = 'MENGE'.
+  st_fcat1-ref_table       = 'MSEG'.
+  APPEND st_fcat1 TO ti_fcat1.
+*
+  ADD 1 TO wl_pos.
+  CLEAR st_fcat1.
+  st_fcat1-col_pos         =  wl_pos.
+  st_fcat1-fieldname       = 'NEC_DM5'.
+  st_fcat1-tabname         = 'TI_ALV1'.
+  READ TABLE r_spmon INDEX 5.
+  IF sy-subrc EQ 0.
+    CONCATENATE 'Nec. dem.' '/' r_spmon-low+4(2) '.' r_spmon-low+0(4) INTO st_fcat1-coltext.
+  ENDIF.
+*  st_fcat1-coltext         = 'Nec. dem. M5'.
+  st_fcat1-ref_field       = 'MENGE'.
+  st_fcat1-ref_table       = 'MSEG'.
+  APPEND st_fcat1 TO ti_fcat1.
+*
+  ADD 1 TO wl_pos.
+  CLEAR st_fcat1.
+  st_fcat1-col_pos         =  wl_pos.
+  st_fcat1-fieldname       = 'NEC_CFM5'.
+  st_fcat1-tabname         = 'TI_ALV1'.
+  CONCATENATE 'Nec. centro.' '/' r_spmon-low+4(2) '.' r_spmon-low+0(4) INTO st_fcat1-coltext.
+*  st_fcat1-coltext         = 'Nec. centro. M5'.
+  st_fcat1-emphasize       = 'X'.
+  st_fcat1-ref_field       = 'MENGE'.
+  st_fcat1-ref_table       = 'MSEG'.
+  APPEND st_fcat1 TO ti_fcat1.
+*
+  ADD 1 TO wl_pos.
+  CLEAR st_fcat1.
+  st_fcat1-col_pos         =  wl_pos.
+  st_fcat1-fieldname       = 'NEC_DM6'.
+  st_fcat1-tabname         = 'TI_ALV1'.
+  READ TABLE r_spmon INDEX 6.
+  IF sy-subrc EQ 0.
+    CONCATENATE 'Nec. dem.' '/' r_spmon-low+4(2) '.' r_spmon-low+0(4) INTO st_fcat1-coltext.
+  ENDIF.
+*  st_fcat1-coltext         = 'Nec. dem. M6'.
+  st_fcat1-ref_field       = 'MENGE'.
+  st_fcat1-ref_table       = 'MSEG'.
+  APPEND st_fcat1 TO ti_fcat1.
+*
+  ADD 1 TO wl_pos.
+  CLEAR st_fcat1.
+  st_fcat1-col_pos         =  wl_pos.
+  st_fcat1-fieldname       = 'NEC_CFM6'.
+  st_fcat1-tabname         = 'TI_ALV1'.
+  CONCATENATE 'Nec. centro.' '/' r_spmon-low+4(2) '.' r_spmon-low+0(4) INTO st_fcat1-coltext.
+*  st_fcat1-coltext         = 'Nec. centro. M6'.
+  st_fcat1-emphasize       = 'X'.
+  st_fcat1-ref_field       = 'MENGE'.
+  st_fcat1-ref_table       = 'MSEG'.
+  APPEND st_fcat1 TO ti_fcat1.
+ENDFORM. " LLENA_FIELDCAT
+*&---------------------------------------------------------------------*
+*&      Form  CREAR_OBJETOS
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM crear_objetos .
+  CREATE OBJECT: o_ccmain
+                         EXPORTING
+                           container_name = 'CC_MAIN'.
+  CREATE OBJECT o_alv_grid1
+    EXPORTING
+      i_parent          = o_ccmain
+    EXCEPTIONS
+      error_cntl_create = 1
+      error_cntl_init   = 2
+      error_cntl_link   = 3
+      error_dp_create   = 4
+      OTHERS            = 5.
+  CALL METHOD o_alv_grid1->register_edit_event
+    EXPORTING
+      i_event_id = cl_gui_alv_grid=>mc_evt_enter
+    EXCEPTIONS
+      error      = 1
+      OTHERS     = 2.
+  IF sy-subrc <> 0.
+*     MESSAGE ID SY-MSGID TYPE SY-MSGTY NUMBER SY-MSGNO
+*                WITH SY-MSGV1 SY-MSGV2 SY-MSGV3 SY-MSGV4.
+  ENDIF.
+ENDFORM. " CREAR_OBJETOS
+*&---------------------------------------------------------------------*
+*&      Form  MUESTRA_OBJETOS
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM muestra_objetos .
+  REFRESH: lt_exclude.
+  CLEAR: lw_layout, lw_varian.
+  lw_layout-zebra       = 'X'.
+  lw_layout-cwidth_opt  = 'X'.
+  lw_varian-report = sy-repid.
+*  PERFORM exclude_tb_functions CHANGING lt_exclude.
+
+  CALL METHOD o_alv_grid1->set_table_for_first_display
+    EXPORTING
+      i_save                        = 'A'
+      i_default                     = 'X'
+      is_variant                    = lw_varian
+      is_layout                     = lw_layout
+      it_toolbar_excluding          = lt_exclude
+    CHANGING
+      it_outtab                     = ti_alv1
+      it_fieldcatalog               = ti_fcat1
+    EXCEPTIONS
+      invalid_parameter_combination = 1
+      program_error                 = 2
+      too_many_lines                = 3
+      OTHERS                        = 4.
+ENDFORM. " MUESTRA_OBJETOS
+*&---------------------------------------------------------------------*
+*&      Form  OBTIENE_ATP
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->P_<FS_ALV>_MATNR  text
+*      -->P_0877   text
+*      -->P_0878   text
+*      <--P_<FS_ALV>_ATP1010  text
+*----------------------------------------------------------------------*
+FORM obtiene_atp USING pu_matnr
+                           pu_werks
+                           pu_regla
+                  CHANGING pc_menge.
+  DATA: l_fecha TYPE sy-datum,
+        l_fecha2 TYPE sy-datum.
+  DATA: st_atpca TYPE atpca,
+          st_atpcs TYPE atpcs,
+          l_menge_e TYPE mseg-menge,
+          l_menge_s TYPE mseg-menge,
+          l_menge TYPE mseg-menge,
+          st_atpmat TYPE atpmat,
+          st_atpds TYPE atpds,
+          ti_atpcs LIKE STANDARD TABLE OF st_atpcs,
+          ti_atpds LIKE STANDARD TABLE OF st_atpds,
+          st_atpds2 TYPE atpds,
+          ti_atpds2 LIKE STANDARD TABLE OF st_atpds,
+          ti_atpmat LIKE STANDARD TABLE OF st_atpmat.
+  REFRESH:ti_atpcs,ti_atpds,ti_atpmat.
+  CLEAR:st_atpcs,st_atpca.
+  st_atpcs-matnr = pu_matnr.
+  st_atpcs-werks = pu_werks.
+*  st_atpcs-kdauf = pu_kdauf.
+*  st_atpcs-kdpos = pu_kdpos.
+  st_atpcs-prreg = pu_regla.
+  st_atpcs-chmod = 'EXP'.
+  st_atpcs-delkz = 'VC'.
+*  st_atpcs-sobkz = 'E'.
+  st_atpcs-bdter = sy-datum.
+  st_atpcs-trtyp = 'A'.
+  st_atpcs-xline = '1'.
+  st_atpcs-resmd = 'X'.
+  st_atpcs-chkflg    = 'X'.
+  st_atpcs-idxatp    = '1'.
+  APPEND st_atpcs TO ti_atpcs.
+  st_atpca-anwdg = '8'.
+  st_atpca-anwdg_orig = 'A'.
+  st_atpca-azerg = 'T'.
+  st_atpca-rdmod = 'A'.
+  st_atpca-xenqmd = 'N'.
+  CALL FUNCTION 'AVAILABILITY_CHECK'
+* EXPORTING
+*   P_SCHEDSH           =
+*   P_SCHEDTR           =
+    TABLES
+*   P_ATPALLX           =
+*   P_ATPASSRESX        =
+*   P_ATPASSX           =
+      p_atpcsx            = ti_atpcs
+*   P_ATPCSX_R3         =
+   p_atpdsx            = ti_atpds
+*   P_ATPFIELDX         =
+    p_atpmatx           = ti_atpmat
+ CHANGING
+   p_atpca             = st_atpca
+*   P_ATPCB             =
+*   P_ATPCC             =
+   EXCEPTIONS
+     error               = 1
+     OTHERS              = 2
+            .
+  IF sy-subrc <> 0.
+  ENDIF.
+*  READ TABLE r_spmon INDEX 1.
+*  IF sy-subrc EQ 0.
+*    CLEAR:l_fecha,l_fecha2.
+*    l_fecha+0(6) =  r_spmon-low.
+*    l_fecha+6(2) = '01'.
+  CALL FUNCTION 'HR_HCP_GET_LAST_DAY_OF_MONTH'
+    EXPORTING
+      im_date              = sy-datum
+    IMPORTING
+*     EX_DATE_IS_MONTHEND  =
+      ex_last_day_of_month = l_fecha2.
+*  ENDIF.
+  REFRESH:ti_atpds2.
+  LOOP AT ti_atpds INTO st_atpds WHERE dat GT l_fecha2
+                                  AND atpnr EQ space.
+    CLEAR:st_atpds2.
+    st_atpds2-sort1 = st_atpds-sort1.
+    st_atpds2-qty_o = st_atpds-qty_o.
+    COLLECT st_atpds2 INTO ti_atpds2.
+  ENDLOOP.
+  READ TABLE ti_atpcs INTO st_atpcs INDEX 1.
+  IF sy-subrc EQ 0.
+    IF NOT ti_atpds2[] IS INITIAL.
+      CLEAR:l_menge_e,l_menge_s.
+      READ TABLE ti_atpds2 INTO st_atpds2 WITH KEY sort1 = '1'.
+      IF sy-subrc EQ 0.
+        l_menge_e =  st_atpcs-sumzg - st_atpds2-qty_o.
+      ELSE.
+        l_menge_e =  st_atpcs-sumzg.
+      ENDIF.
+      READ TABLE ti_atpds2 INTO st_atpds2 WITH KEY sort1 = '2'.
+      IF sy-subrc EQ 0.
+        l_menge_s =  st_atpcs-sumag - st_atpds2-qty_o.
+      ELSE.
+        l_menge_s =  st_atpcs-sumag.
+      ENDIF.
+      pc_menge = l_menge_e - l_menge_s.
+    ELSE.
+
+      pc_menge = st_atpcs-sumzg - st_atpcs-sumag.
+    ENDIF.
+  ENDIF.
+
+*  READ TABLE ti_atpmat INTO st_atpmat INDEX 1.
+*  IF sy-subrc EQ 0.
+*    IF st_atpmat-meins NE pu_meins_pt.
+*      CLEAR:l_menge.
+*      PERFORM convierte_unidad  USING    pu_matnr
+*                                         st_atpmat-meins
+*                                         pu_meins_pt
+*                                         pc_menge
+*                                CHANGING l_menge.
+*      IF NOT l_menge IS INITIAL.
+*        pc_menge = l_menge.
+*      ENDIF.
+*    ENDIF.
+*  ENDIF.
+ENDFORM. " OBTIENE_ATP
+*&---------------------------------------------------------------------*
+*&      Form  OBTIENE_CENTRO_FAV
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->P_<FS_ALV>_MATNR  text
+*----------------------------------------------------------------------*
+FORM obtiene_centro_fav USING pu_matnr
+                        CHANGING pc_werks.
+  DATA : u_object     TYPE ausp-objek.
+  DATA: s_return TYPE bapiret2,
+        t_return1 LIKE STANDARD TABLE OF s_return.
+  READ TABLE ti_char TRANSPORTING NO FIELDS WITH KEY matnr = pu_matnr.
+  IF sy-subrc EQ 0.
+    READ TABLE ti_char INTO st_char WITH KEY matnr = pu_matnr
+                                             charact = 'ZPP_CENTFAV'.
+    IF sy-subrc EQ 0.
+      pc_werks = st_char-value_char.
+    ENDIF.
+  ELSE.
+    u_object+0(18)  = pu_matnr.
+    CALL FUNCTION 'BAPI_OBJCL_GETDETAIL'
+      EXPORTING
+        objectkey       = u_object
+        objecttable     = 'MARA'
+        classnum        = 'ZMAT_CAR'
+        classtype       = '001'
+        keydate         = sy-datum
+        language        = sy-langu
+      TABLES
+        allocvaluesnum  = i_caract_num
+        allocvalueschar = i_caract_char
+        allocvaluescurr = i_caract_curr
+        return          = t_return1.
+    LOOP AT i_caract_char INTO s_caract_char.
+      CLEAR:st_char.
+      st_char-matnr      =  pu_matnr.
+      st_char-charact    =  s_caract_char-charact.
+      st_char-value_char =  s_caract_char-value_char.
+      APPEND st_char TO ti_char.
+      IF s_caract_char-charact EQ 'ZPP_CENTFAV'.
+        pc_werks = s_caract_char-value_char.
+        EXIT.
+      ENDIF.
+    ENDLOOP.
+*      MODIFY ct_ioheader FROM st_header.
+  ENDIF.
+ENDFORM. " OBTIENE_CENTRO_FAV
+*&---------------------------------------------------------------------*
+*&      Form  DISTRIBUYE_DEMANDA
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM distribuye_demanda .
+  DATA:l_menge TYPE mseg-menge,
+        l_menge2 TYPE mseg-menge.
+  LOOP AT ti_alv1 ASSIGNING <fs_alv>.
+    CLEAR:l_menge.
+    l_menge = <fs_alv>-nec_dm1   - <fs_alv>-saldo.
+    IF l_menge GT 0.
+      <fs_alv>-nec_cfm1 = l_menge.
+      <fs_alv>-nec_cfm2 = <fs_alv>-nec_dm2.
+      <fs_alv>-nec_cfm3 = <fs_alv>-nec_dm3.
+      <fs_alv>-nec_cfm4 = <fs_alv>-nec_dm4.
+      <fs_alv>-nec_cfm5 = <fs_alv>-nec_dm5.
+      <fs_alv>-nec_cfm6 = <fs_alv>-nec_dm6.
+    ELSE.
+      CLEAR:<fs_alv>-nec_cfm1,l_menge2.
+      l_menge2 = <fs_alv>-nec_dm2 + l_menge.
+      l_menge = l_menge2.
+      IF l_menge GT 0 .
+        <fs_alv>-nec_cfm2 = l_menge.
+        <fs_alv>-nec_cfm3 = <fs_alv>-nec_dm3.
+        <fs_alv>-nec_cfm4 = <fs_alv>-nec_dm4.
+        <fs_alv>-nec_cfm5 = <fs_alv>-nec_dm5.
+        <fs_alv>-nec_cfm6 = <fs_alv>-nec_dm6.
+      ELSE.
+        CLEAR:<fs_alv>-nec_cfm2,l_menge2.
+        l_menge2 = <fs_alv>-nec_dm3 + l_menge.
+        l_menge = l_menge2.
+        IF l_menge GT 0 .
+          <fs_alv>-nec_cfm3 = l_menge.
+          <fs_alv>-nec_cfm4 = <fs_alv>-nec_dm4.
+          <fs_alv>-nec_cfm5 = <fs_alv>-nec_dm5.
+          <fs_alv>-nec_cfm6 = <fs_alv>-nec_dm6.
+        ELSE.
+          CLEAR:<fs_alv>-nec_cfm3,l_menge2.
+          l_menge2 = <fs_alv>-nec_dm4 + l_menge.
+          l_menge = l_menge2.
+          IF l_menge GT 0 .
+            <fs_alv>-nec_cfm4 = l_menge.
+            <fs_alv>-nec_cfm5 = <fs_alv>-nec_dm5.
+            <fs_alv>-nec_cfm6 = <fs_alv>-nec_dm6.
+          ELSE.
+            CLEAR:<fs_alv>-nec_cfm4,l_menge2.
+            l_menge2 = <fs_alv>-nec_dm5 + l_menge.
+            l_menge = l_menge2.
+            IF l_menge GT 0 .
+              <fs_alv>-nec_cfm5 = l_menge.
+
+              <fs_alv>-nec_cfm6 = <fs_alv>-nec_dm6.
+            ELSE.
+              CLEAR:<fs_alv>-nec_cfm5,l_menge2.
+              l_menge2 = <fs_alv>-nec_dm6 + l_menge.
+              l_menge = l_menge2.
+              IF l_menge GT 0 .
+                <fs_alv>-nec_cfm6 = l_menge.
+              ELSE.
+                CLEAR:<fs_alv>-nec_cfm6,l_menge2.
+              ENDIF.
+            ENDIF.
+          ENDIF.
+        ENDIF.
+      ENDIF.
+
+    ENDIF.
+
+  ENDLOOP.
+ENDFORM. " DISTRIBUYE_DEMANDA
+*&---------------------------------------------------------------------*
+*&      Form  GENERA_NECESIDAD
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM genera_necesidad.
+  DATA: l_menge TYPE mseg-menge.
+*  DATA: req_data LIKE bapisshdin OCCURS 0 WITH HEADER LINE.
+  DATA:
+        l_fecha TYPE sy-datum,
+        l_fecha2 TYPE sy-datum.
+  REFRESH: req_data,return,ti_alv1_2.
+  ti_alv1_2[] = ti_alv1[].
+  SORT ti_alv1_2 BY bukrs prgrp matnr.
+  LOOP AT ti_alv1_2 INTO st_alv1_2.
+    IF st_alv1_2-werks_f IS INITIAL.
+      CLEAR:st_log.
+      st_log-matnr = st_alv1_2-matnr.
+      st_log-werks = st_alv1_2-werks_f.
+      st_log-msgv1 = 'No se genera necesidades sin centro favorito'.
+      st_log-id = c_w.
+      MOVE: 'W' TO st_log-msgtyp.
+      APPEND st_log TO ti_log.
+      CONTINUE.
+    ENDIF.
+*    CLEAR:st_alv1.
+*    MOVE st_alv1_2 TO st_alv1.
+    REFRESH: req_data,i_requirements_schedule_in.
+    REFRESH: req_data2,i_requirements_schedule_in2.
+    REFRESH: req_data3,i_requirements_schedule_in3.
+    READ TABLE r_spmon INDEX 1.
+    IF sy-subrc EQ 0.
+      CLEAR:l_fecha,l_fecha2.
+      l_fecha+0(6) =  r_spmon-low.
+      l_fecha+6(2) = '01'.
+      CALL FUNCTION 'HR_HCP_GET_LAST_DAY_OF_MONTH'
+        EXPORTING
+          im_date              = l_fecha
+        IMPORTING
+*         EX_DATE_IS_MONTHEND  =
+          ex_last_day_of_month = l_fecha2.
+      CLEAR:req_data.
+      req_data-date_type = 1.
+      req_data-req_date = l_fecha2.
+      req_data-req_qty = st_alv1_2-nec_cfm1.
+      APPEND req_data.
+
+      i_requirements_schedule_in-date_type = '1'.
+      i_requirements_schedule_in-req_date  = l_fecha2.
+      i_requirements_schedule_in-req_qty   = st_alv1_2-nec_cfm1.
+      i_requirements_schedule_in-unit      = st_alv1_2-meins.
+      APPEND i_requirements_schedule_in.
+
+      CASE p_bukrs.
+        WHEN '1000'.
+          PERFORM lleba_bapi_cent_nofav USING st_alv1_2-werks_f
+                                                st_alv1_2-atp1010
+                                                st_alv1_2-atp1020
+                                                st_alv1_2-atp1091
+                                                l_fecha2 "LV
+                                                st_alv1_2-meins "LV
+                                                st_alv1_2-nec_p1010"LV
+                                                st_alv1_2-nec_p1020"LV
+                                                st_alv1_2-nec_p1091."LV
+        WHEN '2000'.
+          PERFORM lleba_bapi_cent_nofav2000 USING st_alv1_2-werks_f
+                                                  st_alv1_2-atp2010
+                                                st_alv1_2-atp2020
+*                                                st_alv1_2-atp1091
+                                                l_fecha2
+                                                st_alv1_2-meins
+                                                st_alv1_2-nec_p2010
+                                                st_alv1_2-nec_p2020.
+        WHEN OTHERS.
+      ENDCASE.
+
+    ENDIF.
+
+    READ TABLE r_spmon INDEX 2.
+    IF sy-subrc EQ 0.
+      CLEAR:l_fecha,l_fecha2.
+      l_fecha+0(6) =  r_spmon-low.
+      l_fecha+6(2) = '01'.
+      CALL FUNCTION 'HR_HCP_GET_LAST_DAY_OF_MONTH'
+        EXPORTING
+          im_date              = l_fecha
+        IMPORTING
+*         EX_DATE_IS_MONTHEND  =
+          ex_last_day_of_month = l_fecha2.
+      CLEAR:req_data.
+      req_data-date_type = 1.
+      req_data-req_date = l_fecha2.
+      req_data-req_qty = st_alv1_2-nec_cfm2.
+      APPEND req_data.
+      i_requirements_schedule_in-date_type = '1'.
+      i_requirements_schedule_in-req_date  = l_fecha2.
+      i_requirements_schedule_in-req_qty   = st_alv1_2-nec_cfm2.
+      i_requirements_schedule_in-unit      = st_alv1_2-meins.
+      APPEND i_requirements_schedule_in.
+*      PERFORM lleba_bapi_cent_nofav USING st_alv1_2-werks_f
+*                                          st_alv1_2-atp1010
+*                                          st_alv1_2-atp1020
+*                                          st_alv1_2-atp1091
+*                                          l_fecha2 "LV
+*                                          st_alv1_2-meins"LV
+*                                          st_alv1_2-nec_p1010"LV
+*                                          st_alv1_2-nec_p1020"LV
+*                                          st_alv1_2-nec_p1091."LV
+      CASE p_bukrs.
+        WHEN '1000'.
+*Sólo para el primer periodo se verifica, para los demas periodos necesidad en centro favorito igual a 0.
+          CLEAR:l_menge.
+          PERFORM lleba_bapi_cent_nofav USING st_alv1_2-werks_f
+                                                l_menge
+                                                l_menge
+                                                l_menge
+                                                l_fecha2 "LV
+                                                st_alv1_2-meins "LV
+                                                l_menge
+                                                l_menge
+                                                l_menge.
+        WHEN '2000'.
+*Sólo para el primer periodo se verifica, para los demas periodos necesidad en centro favorito igual a 0.
+          CLEAR:l_menge.
+          PERFORM lleba_bapi_cent_nofav2000 USING st_alv1_2-werks_f
+                                                  l_menge
+                                                  l_menge
+                                                  l_fecha2
+                                                  st_alv1_2-meins
+                                                  l_menge
+                                                  l_menge.
+        WHEN OTHERS.
+      ENDCASE.
+    ENDIF.
+*    CLEAR:req_data.
+*    req_data-date_type = 1.
+*    req_data-req_date = '20070723'.
+*    req_data-req_qty = st_alv1_2-nec_cfm2.
+*    APPEND req_data.
+    READ TABLE r_spmon INDEX 3.
+    IF sy-subrc EQ 0.
+      CLEAR:l_fecha,l_fecha2.
+      l_fecha+0(6) =  r_spmon-low.
+      l_fecha+6(2) = '01'.
+      CALL FUNCTION 'HR_HCP_GET_LAST_DAY_OF_MONTH'
+        EXPORTING
+          im_date              = l_fecha
+        IMPORTING
+*         EX_DATE_IS_MONTHEND  =
+          ex_last_day_of_month = l_fecha2.
+      CLEAR:req_data.
+      req_data-date_type = 1.
+      req_data-req_date = l_fecha2.
+      req_data-req_qty = st_alv1_2-nec_cfm3.
+      APPEND req_data.
+      i_requirements_schedule_in-date_type = '1'.
+      i_requirements_schedule_in-req_date  = l_fecha2.
+      i_requirements_schedule_in-req_qty   = st_alv1_2-nec_cfm3.
+      i_requirements_schedule_in-unit      = st_alv1_2-meins.
+      APPEND i_requirements_schedule_in.
+*      PERFORM lleba_bapi_cent_nofav USING st_alv1_2-werks_f
+*                                          st_alv1_2-atp1010
+*                                          st_alv1_2-atp1020
+*                                          st_alv1_2-atp1091
+*                                          l_fecha2 "LV
+*                                          st_alv1_2-meins"LV
+*                                          st_alv1_2-nec_p1010"LV
+*                                          st_alv1_2-nec_p1020"LV
+*                                          st_alv1_2-nec_p1091."LV
+      CASE p_bukrs.
+        WHEN '1000'.
+*Sólo para el primer periodo se verifica, para los demas periodos necesidad en centro favorito igual a 0.
+          CLEAR:l_menge.
+          PERFORM lleba_bapi_cent_nofav USING st_alv1_2-werks_f
+                                                l_menge
+                                                l_menge
+                                                l_menge
+                                                l_fecha2 "LV
+                                                st_alv1_2-meins "LV
+                                                l_menge
+                                                l_menge
+                                                l_menge.
+        WHEN '2000'.
+*Sólo para el primer periodo se verifica, para los demas periodos necesidad en centro favorito igual a 0.
+          CLEAR:l_menge.
+          PERFORM lleba_bapi_cent_nofav2000 USING st_alv1_2-werks_f
+                                                  l_menge
+                                                  l_menge
+                                                l_fecha2
+                                                st_alv1_2-meins
+                                                l_menge
+                                                l_menge.
+        WHEN OTHERS.
+      ENDCASE.
+    ENDIF.
+    READ TABLE r_spmon INDEX 4.
+    IF sy-subrc EQ 0.
+      CLEAR:l_fecha,l_fecha2.
+      l_fecha+0(6) =  r_spmon-low.
+      l_fecha+6(2) = '01'.
+      CALL FUNCTION 'HR_HCP_GET_LAST_DAY_OF_MONTH'
+        EXPORTING
+          im_date              = l_fecha
+        IMPORTING
+*         EX_DATE_IS_MONTHEND  =
+          ex_last_day_of_month = l_fecha2.
+      CLEAR:req_data.
+      req_data-date_type = 1.
+      req_data-req_date = l_fecha2.
+      req_data-req_qty = st_alv1_2-nec_cfm4.
+      APPEND req_data.
+      i_requirements_schedule_in-date_type = '1'.
+      i_requirements_schedule_in-req_date  = l_fecha2.
+      i_requirements_schedule_in-req_qty   = st_alv1_2-nec_cfm4.
+      i_requirements_schedule_in-unit      = st_alv1_2-meins.
+      APPEND i_requirements_schedule_in.
+*      PERFORM lleba_bapi_cent_nofav USING st_alv1_2-werks_f
+*                                          st_alv1_2-atp1010
+*                                          st_alv1_2-atp1020
+*                                          st_alv1_2-atp1091
+*                                          l_fecha2 "LV
+*                                          st_alv1_2-meins"LV
+*                                          st_alv1_2-nec_p1010"LV
+*                                          st_alv1_2-nec_p1020"LV
+*                                          st_alv1_2-nec_p1091."LV
+      CASE p_bukrs.
+        WHEN '1000'.
+*Sólo para el primer periodo se verifica, para los demas periodos necesidad en centro favorito igual a 0.
+          CLEAR:l_menge.
+          PERFORM lleba_bapi_cent_nofav USING st_alv1_2-werks_f
+                                                l_menge
+                                                l_menge
+                                                l_menge
+                                                l_fecha2 "LV
+                                                st_alv1_2-meins "LV
+                                                l_menge
+                                                l_menge
+                                                l_menge.
+        WHEN '2000'.
+*Sólo para el primer periodo se verifica, para los demas periodos necesidad en centro favorito igual a 0.
+          CLEAR:l_menge.
+          PERFORM lleba_bapi_cent_nofav2000 USING st_alv1_2-werks_f
+                                                  l_menge
+                                                  l_menge
+                                                l_fecha2
+                                                st_alv1_2-meins
+                                                l_menge
+                                                l_menge.
+        WHEN OTHERS.
+      ENDCASE.
+    ENDIF.
+*    CLEAR:req_data.
+*    req_data-date_type = 1.
+*    req_data-req_date = '20070723'.
+*    req_data-req_qty = st_alv1_2-nec_cfm4.
+*    APPEND req_data.
+    READ TABLE r_spmon INDEX 5.
+    IF sy-subrc EQ 0.
+      CLEAR:l_fecha,l_fecha2.
+      l_fecha+0(6) =  r_spmon-low.
+      l_fecha+6(2) = '01'.
+      CALL FUNCTION 'HR_HCP_GET_LAST_DAY_OF_MONTH'
+        EXPORTING
+          im_date              = l_fecha
+        IMPORTING
+*         EX_DATE_IS_MONTHEND  =
+          ex_last_day_of_month = l_fecha2.
+      CLEAR:req_data.
+      req_data-date_type = 1.
+      req_data-req_date = l_fecha2.
+      req_data-req_qty = st_alv1_2-nec_cfm5.
+      APPEND req_data.
+      i_requirements_schedule_in-date_type = '1'.
+      i_requirements_schedule_in-req_date  = l_fecha2.
+      i_requirements_schedule_in-req_qty   = st_alv1_2-nec_cfm5.
+      i_requirements_schedule_in-unit      = st_alv1_2-meins.
+      APPEND i_requirements_schedule_in.
+*      PERFORM lleba_bapi_cent_nofav USING st_alv1_2-werks_f
+*                                          st_alv1_2-atp1010
+*                                          st_alv1_2-atp1020
+*                                          st_alv1_2-atp1091
+*                                          l_fecha2 "LV
+*                                          st_alv1_2-meins"LV
+*                                          st_alv1_2-nec_p1010"LV
+*                                          st_alv1_2-nec_p1020"LV
+*                                          st_alv1_2-nec_p1091."LV
+      CASE p_bukrs.
+        WHEN '1000'.
+*Sólo para el primer periodo se verifica, para los demas periodos necesidad en centro favorito igual a 0.
+          st_alv1_2-nec_p1010 = st_alv1_2-atp1010.
+          st_alv1_2-nec_p1020 = st_alv1_2-atp1020.
+          st_alv1_2-nec_p1091 = st_alv1_2-atp1091.
+          PERFORM lleba_bapi_cent_nofav USING st_alv1_2-werks_f
+                                                st_alv1_2-atp1010
+                                                st_alv1_2-atp1020
+                                                st_alv1_2-atp1091
+                                                l_fecha2 "LV
+                                                st_alv1_2-meins "LV
+                                                st_alv1_2-nec_p1010"LV
+                                                st_alv1_2-nec_p1020"LV
+                                                st_alv1_2-nec_p1091."LV
+        WHEN '2000'.
+*Sólo para el primer periodo se verifica, para los demas periodos necesidad en centro favorito igual a 0.
+          st_alv1_2-nec_p2010 = st_alv1_2-atp2010.
+          st_alv1_2-nec_p2020 = st_alv1_2-atp2020.
+          PERFORM lleba_bapi_cent_nofav2000 USING st_alv1_2-werks_f
+                                                  st_alv1_2-atp2010
+                                                st_alv1_2-atp2020
+*                                                st_alv1_2-atp1091
+                                                l_fecha2
+                                                st_alv1_2-meins
+                                                st_alv1_2-nec_p2010
+                                                st_alv1_2-nec_p2020.
+        WHEN OTHERS.
+      ENDCASE.
+    ENDIF.
+*    CLEAR:req_data.
+*    req_data-date_type = 1.
+*    req_data-req_date = '20070723'.
+*    req_data-req_qty = st_alv1_2-nec_cfm5.
+*    APPEND req_data.
+    READ TABLE r_spmon INDEX 6.
+    IF sy-subrc EQ 0.
+      CLEAR:l_fecha,l_fecha2.
+      l_fecha+0(6) =  r_spmon-low.
+      l_fecha+6(2) = '01'.
+      CALL FUNCTION 'HR_HCP_GET_LAST_DAY_OF_MONTH'
+        EXPORTING
+          im_date              = l_fecha
+        IMPORTING
+*         EX_DATE_IS_MONTHEND  =
+          ex_last_day_of_month = l_fecha2.
+      CLEAR:req_data.
+      req_data-date_type = 1.
+      req_data-req_date = l_fecha2.
+      req_data-req_qty = st_alv1_2-nec_cfm6.
+      APPEND req_data.
+      i_requirements_schedule_in-date_type = '1'.
+      i_requirements_schedule_in-req_date  = l_fecha2.
+      i_requirements_schedule_in-req_qty   = st_alv1_2-nec_cfm6.
+      i_requirements_schedule_in-unit      = st_alv1_2-meins.
+      APPEND i_requirements_schedule_in.
+*      PERFORM lleba_bapi_cent_nofav USING st_alv1_2-werks_f
+*                                          st_alv1_2-atp1010
+*                                          st_alv1_2-atp1020
+*                                          st_alv1_2-atp1091
+*                                          l_fecha2 "LV
+*                                          st_alv1_2-meins "LV
+*                                          st_alv1_2-nec_p1010"LV
+*                                          st_alv1_2-nec_p1020"LV
+*                                          st_alv1_2-nec_p1091."LV
+      CASE p_bukrs.
+        WHEN '1000'.
+*Sólo para el primer periodo se verifica, para los demas periodos necesidad en centro favorito igual a 0.
+          st_alv1_2-nec_p1010 = st_alv1_2-atp1010.
+          st_alv1_2-nec_p1020 = st_alv1_2-atp1020.
+          st_alv1_2-nec_p1091 = st_alv1_2-atp1091.
+          PERFORM lleba_bapi_cent_nofav USING st_alv1_2-werks_f
+                                                st_alv1_2-atp1010
+                                                st_alv1_2-atp1020
+                                                st_alv1_2-atp1091
+                                                l_fecha2 "LV
+                                                st_alv1_2-meins "LV
+                                                st_alv1_2-nec_p1010"LV
+                                                st_alv1_2-nec_p1020"LV
+                                                st_alv1_2-nec_p1091."LV
+        WHEN '2000'.
+*Sólo para el primer periodo se verifica, para los demas periodos necesidad en centro favorito igual a 0.
+          st_alv1_2-nec_p2010 = st_alv1_2-atp2010.
+          st_alv1_2-nec_p2020 = st_alv1_2-atp2020.
+          PERFORM lleba_bapi_cent_nofav2000 USING st_alv1_2-werks_f
+                                                  st_alv1_2-atp2010
+                                                st_alv1_2-atp2020
+*                                                st_alv1_2-atp1091
+                                                l_fecha2
+                                                st_alv1_2-meins
+                                                st_alv1_2-nec_p2010
+                                                st_alv1_2-nec_p2020.
+        WHEN OTHERS.
+      ENDCASE.
+    ENDIF.
+    REFRESH: return.
+*    READ TABLE ti_pbim00 INTO st_pbim WITH KEY matnr = st_alv1_2-matnr
+*                                             werks = st_alv1_2-werks_f.
+*    IF sy-subrc EQ 0.
+*      PERFORM modifica_necesidad USING st_alv1_2-matnr
+*                                       st_alv1_2-werks_f.
+*
+*    ELSE.
+*      PERFORM crea_necesidad USING st_alv1_2-matnr
+*                                   st_alv1_2-werks_f.
+*
+*    ENDIF.
+    "LV
+    IF st_alv1_2-werks_f EQ 1010 .
+
+      READ TABLE ti_pbim00 INTO st_pbim WITH KEY matnr = st_alv1_2-matnr
+                                             werks = st_alv1_2-werks_f.
+      IF sy-subrc EQ 0.
+        PERFORM modifica_necesidad USING st_alv1_2-matnr
+                                         st_alv1_2-werks_f.
+      ELSE.
+        PERFORM crea_necesidad USING st_alv1_2-matnr
+                                     st_alv1_2-werks_f.
+      ENDIF.
+
+      CLEAR:gl_werks.
+      gl_werks = 1020.
+      READ TABLE ti_pbim00 INTO st_pbim WITH KEY matnr = st_alv1_2-matnr
+                                                werks = gl_werks.
+      IF sy-subrc EQ 0.
+
+        PERFORM modifica_necesidad1 USING   st_alv1_2-matnr
+                                             gl_werks
+                                             req_data2[].
+      ELSE.
+        PERFORM crea_necesidad1 USING st_alv1_2-matnr
+                                     gl_werks
+                                     i_requirements_schedule_in2[].
+      ENDIF.
+
+      CLEAR:gl_werks.
+      gl_werks = 1091.
+      READ TABLE ti_pbim00 INTO st_pbim WITH KEY matnr = st_alv1_2-matnr
+                                              werks = gl_werks.
+      IF sy-subrc EQ 0.
+        PERFORM modifica_necesidad1 USING st_alv1_2-matnr
+                                         gl_werks
+                                         req_data3[].
+      ELSE.
+        PERFORM crea_necesidad1 USING st_alv1_2-matnr
+                                     gl_werks
+                                     i_requirements_schedule_in3[].
+      ENDIF.
+
+
+    ELSEIF st_alv1_2-werks_f EQ 1020 .
+
+      READ TABLE ti_pbim00 INTO st_pbim WITH KEY matnr = st_alv1_2-matnr
+                                         werks = st_alv1_2-werks_f.
+      IF sy-subrc EQ 0.
+        PERFORM modifica_necesidad USING st_alv1_2-matnr
+                                         st_alv1_2-werks_f.
+      ELSE.
+        PERFORM crea_necesidad USING st_alv1_2-matnr
+                                     st_alv1_2-werks_f.
+      ENDIF.
+
+      CLEAR:gl_werks.
+      gl_werks = 1010.
+      READ TABLE ti_pbim00 INTO st_pbim WITH KEY matnr = st_alv1_2-matnr
+                                              werks = gl_werks.
+      IF sy-subrc EQ 0.
+        PERFORM modifica_necesidad1 USING st_alv1_2-matnr
+                                         gl_werks
+                                         req_data2[].
+      ELSE.
+        PERFORM crea_necesidad1 USING st_alv1_2-matnr
+                                     gl_werks
+                                     i_requirements_schedule_in2[].
+      ENDIF.
+
+      CLEAR:gl_werks.
+      gl_werks = 1091.
+      READ TABLE ti_pbim00 INTO st_pbim WITH KEY matnr = st_alv1_2-matnr
+                                              werks = gl_werks.
+      IF sy-subrc EQ 0.
+        PERFORM modifica_necesidad1 USING st_alv1_2-matnr
+                                         gl_werks
+                                         req_data3[].
+      ELSE.
+        PERFORM crea_necesidad1 USING st_alv1_2-matnr
+                                     gl_werks
+                                     i_requirements_schedule_in3[].
+      ENDIF.
+
+    ELSEIF st_alv1_2-werks_f EQ 1091 .
+
+      READ TABLE ti_pbim00 INTO st_pbim WITH KEY matnr = st_alv1_2-matnr
+                                      werks = st_alv1_2-werks_f.
+      IF sy-subrc EQ 0.
+        PERFORM modifica_necesidad USING st_alv1_2-matnr
+                                         st_alv1_2-werks_f.
+      ELSE.
+        PERFORM crea_necesidad USING st_alv1_2-matnr
+                                     st_alv1_2-werks_f.
+
+      ENDIF.
+
+      CLEAR:gl_werks.
+      gl_werks = 1010.
+      READ TABLE ti_pbim00 INTO st_pbim WITH KEY matnr = st_alv1_2-matnr
+                                              werks = gl_werks.
+      IF sy-subrc EQ 0.
+        PERFORM modifica_necesidad1 USING st_alv1_2-matnr
+                                         gl_werks
+                                         req_data2[].
+      ELSE.
+        PERFORM crea_necesidad1 USING st_alv1_2-matnr
+                                     gl_werks
+                                     i_requirements_schedule_in2[].
+      ENDIF.
+
+      CLEAR:gl_werks.
+      gl_werks = 1020.
+      READ TABLE ti_pbim00 INTO st_pbim WITH KEY matnr = st_alv1_2-matnr
+                                               werks =  gl_werks.
+      IF sy-subrc EQ 0.
+        PERFORM modifica_necesidad1 USING st_alv1_2-matnr
+                                         gl_werks
+                                         req_data3[].
+      ELSE.
+        PERFORM crea_necesidad1 USING st_alv1_2-matnr
+                                     gl_werks
+                                     i_requirements_schedule_in3[].
+      ENDIF.
+
+    ELSEIF st_alv1_2-werks_f EQ 2010.
+
+      READ TABLE ti_pbim00 INTO st_pbim WITH KEY matnr = st_alv1_2-matnr
+                                         werks = st_alv1_2-werks_f.
+      IF sy-subrc EQ 0.
+        PERFORM modifica_necesidad USING st_alv1_2-matnr
+                                         st_alv1_2-werks_f.
+      ELSE.
+        PERFORM crea_necesidad USING st_alv1_2-matnr
+                                     st_alv1_2-werks_f.
+      ENDIF.
+
+      CLEAR:gl_werks.
+      gl_werks = 2020.
+      READ TABLE ti_pbim00 INTO st_pbim WITH KEY matnr = st_alv1_2-matnr
+                                              werks = gl_werks.
+      IF sy-subrc EQ 0.
+        PERFORM modifica_necesidad1 USING st_alv1_2-matnr
+                                         gl_werks
+                                         req_data2[].
+      ELSE.
+        PERFORM crea_necesidad1 USING st_alv1_2-matnr
+                                     gl_werks
+                                     i_requirements_schedule_in2[].
+      ENDIF.
+    ELSEIF st_alv1_2-werks_f EQ 2020.
+
+      READ TABLE ti_pbim00 INTO st_pbim WITH KEY matnr = st_alv1_2-matnr
+                                         werks = st_alv1_2-werks_f.
+      IF sy-subrc EQ 0.
+        PERFORM modifica_necesidad USING st_alv1_2-matnr
+                                         st_alv1_2-werks_f.
+      ELSE.
+        PERFORM crea_necesidad USING st_alv1_2-matnr
+                                     st_alv1_2-werks_f.
+      ENDIF.
+
+      CLEAR:gl_werks.
+      gl_werks = 2010.
+      READ TABLE ti_pbim00 INTO st_pbim WITH KEY matnr = st_alv1_2-matnr
+                                              werks = gl_werks.
+      IF sy-subrc EQ 0.
+        PERFORM modifica_necesidad1 USING st_alv1_2-matnr
+                                         gl_werks
+                                         req_data2[].
+      ELSE.
+        PERFORM crea_necesidad1 USING st_alv1_2-matnr
+                                     gl_werks
+                                     i_requirements_schedule_in2[].
+      ENDIF.
+    ENDIF.
+    "LV
+
+*    ENDAT.
+  ENDLOOP.
+  IF sy-subrc EQ 0.
+    IF NOT ti_log IS INITIAL.
+      PERFORM muestra_log.
+    ELSE.
+      MESSAGE 'Se generaron las necesidades correctamente' TYPE 'I'.
+    ENDIF.
+  ENDIF.
+
+ENDFORM. " GENERA_NECESIDAD
+*&---------------------------------------------------------------------*
+*&      Form  MODIFICA_NECESIDAD
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM modifica_necesidad USING pu_matnr
+                              pu_werks
+                              .
+  DATA: gwa_requirement_param         LIKE cm60r.
+  CLEAR: gwa_requirement_param.
+  gwa_requirement_param-status = 'X'.
+  gwa_requirement_param-trtyp = 'X'.
+  gwa_requirement_param-syncron = 'X'.
+  CALL FUNCTION 'BAPI_REQUIREMENTS_CHANGE'
+        EXPORTING
+          material                       = pu_matnr
+          plant                          = pu_werks
+          requirementstype               = 'VSF'
+          version                        = '00'
+          reqmtsplannumber               = st_pbim-pbdnr
+          vers_activ                     = 'X'
+          requirement_param              = gwa_requirement_param
+*   MRP_AREA                       =
+         do_commit                      = ' '
+         update_mode                    = 'X'
+         delete_old                     = 'X'
+*   NO_WITHDR                      = ' '
+*   MATERIAL_EVG                   =
+* IMPORTING
+*   REQUIREMENT_ITEM_OUT           =
+        TABLES
+         requirements_schedule_in       = req_data[]
+*   REQUIREMENTS_CHAR_IN           =
+          return                         = return[].
+  IF return[] IS INITIAL.
+    CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
+      EXPORTING
+        wait = 'X'.
+    CLEAR:st_log.
+    st_log-matnr = pu_matnr.
+    st_log-werks = pu_werks.
+    st_log-msgv1 = 'Se generó las necesidades correctamente'.
+    st_log-id = c_i.
+    MOVE: 'I' TO st_log-msgtyp.
+*              return-number  TO st_log-msgnr,
+*              return-id  TO st_log-msgid.
+    APPEND st_log TO ti_log.
+  ELSE.
+    LOOP AT return.
+      CLEAR:st_log.
+      st_log-matnr = pu_matnr.
+      st_log-werks = pu_werks.
+      st_log-msgv1 = return-message.
+      st_log-id = c_e.
+      MOVE: return-type TO st_log-msgtyp,
+              return-number  TO st_log-msgnr,
+              return-id  TO st_log-msgid.
+      APPEND st_log TO ti_log.
+    ENDLOOP.
+  ENDIF.
+ENDFORM. " MODIFICA_NECESIDAD
+*&---------------------------------------------------------------------*
+*&      Form  CREA_NECESIDAD
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM crea_necesidad USING pu_matnr
+                          pu_werks.
+  CLEAR w_bapisitemr.
+  w_bapisitemr-material   = pu_matnr.
+  w_bapisitemr-plant      = pu_werks.
+  w_bapisitemr-requ_type  = 'VSF'.
+  w_bapisitemr-version    = '00'.
+  w_bapisitemr-vers_activ = 'X'.
+*  w_bapisitemr-req_number = c_reqmtsplannumber.
+
+
+  CALL FUNCTION 'BAPI_REQUIREMENTS_CREATE'
+    EXPORTING
+      requirements_item        = w_bapisitemr
+    TABLES
+      requirements_schedule_in = i_requirements_schedule_in
+      return                   = i_bapireturn1.
+ENDFORM. " CREA_NECESIDAD
+*&---------------------------------------------------------------------*
+*&      Form  MUESTRA_LOG
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM muestra_log .
+  CLEAR: st_layout_log.
+  st_layout_log-colwidth_optimize = 'X'.
+  PERFORM f_fieldcat_log_pl.
+  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+    EXPORTING
+      is_layout             = st_layout_log
+      it_fieldcat           = ti_fcat_log[]
+*     i_screen_start_column = 20
+*     i_screen_start_line   = 5
+*     i_screen_end_column   = 120
+*     i_screen_end_line     = 15
+    TABLES
+      t_outtab              = ti_log[]
+    EXCEPTIONS
+      program_error         = 1
+      OTHERS                = 2.
+ENDFORM. " MUESTRA_LOG
+*&---------------------------------------------------------------------*
+*&      Form  F_FIELDCAT_LOG_PL
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM f_fieldcat_log_pl .
+  DATA: vl_pos TYPE i.
+  REFRESH ti_fcat_log[].
+  CLEAR vl_pos.
+  CLEAR st_fcat_log.
+  ADD 1 TO vl_pos.
+  st_fcat_log-col_pos    = vl_pos.
+  st_fcat_log-fieldname  = 'ID'.
+  st_fcat_log-tabname    = 'TI_LOG'.
+  st_fcat_log-seltext_l  = 'Semaf.'.
+  st_fcat_log-ref_fieldname  = 'ID'.
+  st_fcat_log-ref_tabname  = 'ICON'.
+  APPEND st_fcat_log TO ti_fcat_log.
+*  CLEAR st_fcat_log.
+*  ADD 1 TO vl_pos.
+*  st_fcat_log-col_pos    = vl_pos.
+*  st_fcat_log-fieldname  = 'ZMODELO'.
+*  st_fcat_log-tabname    = 'TI_LOG'.
+*  st_fcat_log-seltext_l  = 'Grupo prod.'.
+*  APPEND st_fcat_log TO ti_fcat_log.
+  CLEAR st_fcat_log.
+  ADD 1 TO vl_pos.
+  st_fcat_log-col_pos    = vl_pos.
+  st_fcat_log-fieldname  = 'MATNR'.
+  st_fcat_log-tabname    = 'TI_LOG'.
+  st_fcat_log-seltext_l  = 'Material'.
+  APPEND st_fcat_log TO ti_fcat_log.
+  CLEAR st_fcat_log.
+  ADD 1 TO vl_pos.
+  st_fcat_log-col_pos    = vl_pos.
+  st_fcat_log-fieldname  = 'WERKS'.
+  st_fcat_log-tabname    = 'TI_LOG'.
+  st_fcat_log-seltext_l  = 'Centro'.
+  APPEND st_fcat_log TO ti_fcat_log.
+*  CLEAR st_fcat_log.
+*  ADD 1 TO vl_pos.
+*  st_fcat_log-col_pos    = vl_pos.
+*  st_fcat_log-fieldname  = 'ZMES'.
+*  st_fcat_log-tabname    = 'TI_LOG'.
+*  st_fcat_log-seltext_l  = 'Mes'.
+*  APPEND st_fcat_log TO ti_fcat_log.
+*  CLEAR st_fcat_log.
+*  CLEAR st_fcat_log.
+*  ADD 1 TO vl_pos.
+*  st_fcat_log-col_pos    = vl_pos.
+*  st_fcat_log-fieldname  = 'MENGE'.
+*  st_fcat_log-tabname    = 'TI_LOG'.
+*  st_fcat_log-seltext_l  = 'Cantidad'.
+*  APPEND st_fcat_log TO ti_fcat_log.
+  CLEAR st_fcat_log.
+  ADD 1 TO vl_pos.
+  st_fcat_log-col_pos    = vl_pos.
+  st_fcat_log-fieldname  = 'MSGTYP'.
+  st_fcat_log-tabname    = 'TI_LOG'.
+  st_fcat_log-seltext_l  = 'Tipo'.
+  APPEND st_fcat_log TO ti_fcat_log.
+
+  CLEAR st_fcat_log.
+  ADD 1 TO vl_pos.
+  st_fcat_log-col_pos    = vl_pos.
+  st_fcat_log-fieldname  = 'MSGID'.
+  st_fcat_log-tabname    = 'TI_LOG'.
+  st_fcat_log-seltext_l  = 'ID mensaje'.
+  APPEND st_fcat_log TO ti_fcat_log.
+
+  CLEAR st_fcat_log.
+  ADD 1 TO vl_pos.
+  st_fcat_log-col_pos    = vl_pos.
+  st_fcat_log-fieldname  = 'MSGNR'.
+  st_fcat_log-tabname    = 'TI_LOG'.
+  st_fcat_log-seltext_l  = 'Nro.Msj.'.
+  APPEND st_fcat_log TO ti_fcat_log.
+
+  CLEAR st_fcat_log.
+  ADD 1 TO vl_pos.
+  st_fcat_log-col_pos    = vl_pos.
+  st_fcat_log-fieldname  = 'MSGV1'.
+  st_fcat_log-tabname    = 'TI_LOG'.
+  st_fcat_log-seltext_l  = 'Mensaje'.
+  APPEND st_fcat_log TO ti_fcat_log.
+ENDFORM. " F_FIELDCAT_LOG_PL
+*&---------------------------------------------------------------------*
+*&      Form  OBTIENE_NEC_PEND
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->P_<FS_ALV>_MATNR  text
+*      -->P_1560   text
+*----------------------------------------------------------------------*
+FORM obtiene_nec_pend USING pu_matnr
+                             pu_werks
+                    CHANGING pc_menge.
+*Se obtiene la necesidad pendiente del mes.
+  READ TABLE ti_nec_p INTO st_nec_p WITH KEY matnr = pu_matnr
+                                             werks = pu_werks.
+  IF sy-subrc EQ 0.
+    IF st_nec_p-plnmg GT 0.
+      READ TABLE ti_vbbe_ac INTO st_vbbe WITH KEY matnr = pu_matnr
+                                                 werks = pu_werks.
+*Se obtiene los pedidos pendientes que disminuyen la necesidad pendiente del mes.
+      IF sy-subrc EQ 0.
+
+        pc_menge = st_nec_p-plnmg - st_vbbe-omeng.
+        IF pc_menge LT 0.
+          CLEAR:pc_menge.
+        ENDIF.
+      ELSE.
+        pc_menge = st_nec_p-plnmg.
+      ENDIF.
+    ENDIF.
+  ENDIF.
+
+
+
+ENDFORM. " OBTIENE_NEC_PEND
+*&---------------------------------------------------------------------*
+*&      Form  LLEBA_BAPI_CENT_NOFAV
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->P_ST_ALV1_2_WERKS_F  text
+*      -->P_ST_ALV1_2_ATP1010  text
+*      -->P_ST_ALV1_2_ATP1020  text
+*      -->P_ST_ALV1_2_ATP1091  text
+*----------------------------------------------------------------------*
+FORM lleba_bapi_cent_nofav USING pu_werks_f
+                                     pu_atp1010
+                                     pu_atp1020
+                                     pu_atp1091
+                                     pu_fecha2
+                                     pu_meins
+                                     pu_necp1010
+                                     pu_necp1020
+                                     pu_necp1091.
+  CASE pu_werks_f.
+    WHEN '1010'.
+
+      gl_atp1020 = pu_atp1020 - pu_necp1020.
+      IF gl_atp1020 GT 0.
+        i_requirements_schedule_in2-req_qty   = gl_atp1020.
+        req_data2-req_qty = pu_atp1020.
+      ELSE.
+        i_requirements_schedule_in2-req_qty   = 0.
+        req_data2-req_qty = 0.
+      ENDIF.
+      i_requirements_schedule_in2-date_type = '1'.
+      i_requirements_schedule_in2-req_date  = pu_fecha2.
+*        i_requirements_schedule_in2-req_qty   = pu_atp1020.
+      i_requirements_schedule_in2-unit      = pu_meins.
+      APPEND i_requirements_schedule_in2.
+      req_data2-date_type = 1.
+      req_data2-req_date = pu_fecha2.
+      req_data2-req_qty = pu_atp1020.
+      APPEND req_data2.
+
+      gl_atp1091 = pu_atp1091 - pu_necp1091.
+      IF gl_atp1091 GT 0.
+        i_requirements_schedule_in3-req_qty   = gl_atp1091.
+        req_data3-req_qty = pu_atp1091.
+      ELSE.
+        i_requirements_schedule_in3-req_qty   = 0.
+        req_data3-req_qty   = 0.
+      ENDIF.
+      i_requirements_schedule_in3-date_type = '1'.
+      i_requirements_schedule_in3-req_date  = pu_fecha2.
+*      i_requirements_schedule_in3-req_qty   = pu_atp1091.
+      i_requirements_schedule_in3-unit      = pu_meins.
+      APPEND i_requirements_schedule_in3.
+      req_data3-date_type = 1.
+      req_data3-req_date = pu_fecha2.
+*      req_data3-req_qty = pu_atp1091.
+      APPEND req_data3.
+
+
+    WHEN '1020'.
+
+      gl_atp1010 = pu_atp1010 - pu_necp1010.
+      IF gl_atp1010 GT 0.
+        i_requirements_schedule_in2-req_qty   = gl_atp1010.
+        req_data2-req_qty = pu_atp1010.
+      ELSE.
+        i_requirements_schedule_in2-req_qty   = 0.
+        req_data2-req_qty   = 0.
+      ENDIF.
+      i_requirements_schedule_in2-date_type = '1'.
+      i_requirements_schedule_in2-req_date  = pu_fecha2.
+*      i_requirements_schedule_in2-req_qty   = pu_atp1010.
+      i_requirements_schedule_in2-unit      = pu_meins.
+      APPEND i_requirements_schedule_in2.
+      req_data2-date_type = 1.
+      req_data2-req_date = pu_fecha2.
+*      req_data2-req_qty = pu_atp1010.
+      APPEND req_data2.
+
+      gl_atp1091 = pu_atp1091 - pu_necp1091.
+      IF gl_atp1091 GT 0.
+        i_requirements_schedule_in3-req_qty   = gl_atp1091.
+        req_data3-req_qty = pu_atp1091.
+      ELSE.
+        i_requirements_schedule_in3-req_qty   = 0.
+        req_data3-req_qty   = 0.
+      ENDIF.
+      i_requirements_schedule_in3-date_type = '1'.
+      i_requirements_schedule_in3-req_date  = pu_fecha2.
+*    i_requirements_schedule_in3-req_qty   = pu_atp1091.
+      i_requirements_schedule_in3-unit      = pu_meins.
+      APPEND i_requirements_schedule_in3.
+      req_data3-date_type = 1.
+      req_data3-req_date = pu_fecha2.
+*    req_data3-req_qty = pu_atp1091.
+      APPEND req_data3.
+
+    WHEN '1091'.
+
+      gl_atp1010 = pu_atp1010 - pu_necp1010.
+      IF gl_atp1010 GT 0.
+        i_requirements_schedule_in2-req_qty   = gl_atp1010.
+        req_data2-req_qty = pu_atp1010.
+      ELSE.
+        i_requirements_schedule_in2-req_qty   = 0.
+        req_data2-req_qty   = 0.
+      ENDIF.
+      i_requirements_schedule_in2-date_type = '1'.
+      i_requirements_schedule_in2-req_date  = pu_fecha2.
+*      i_requirements_schedule_in2-req_qty   = pu_atp1010.
+      i_requirements_schedule_in2-unit      = pu_meins.
+      APPEND i_requirements_schedule_in2.
+      req_data2-date_type = 1.
+      req_data2-req_date = pu_fecha2.
+*      req_data2-req_qty = pu_atp1010.
+      APPEND req_data2.
+
+      gl_atp1020 = pu_atp1020 - pu_necp1020.
+      IF gl_atp1020 GT 0.
+        i_requirements_schedule_in3-req_qty   = gl_atp1020.
+        req_data3-req_qty = pu_atp1020.
+      ELSE.
+        i_requirements_schedule_in3-req_qty   = 0.
+        req_data3-req_qty   = 0.
+      ENDIF.
+      i_requirements_schedule_in3-date_type = '1'.
+      i_requirements_schedule_in3-req_date  = pu_fecha2.
+*      i_requirements_schedule_in3-req_qty   = pu_atp1020.
+      i_requirements_schedule_in3-unit      = pu_meins.
+      APPEND i_requirements_schedule_in3.
+      req_data3-date_type = 1.
+      req_data3-req_date = pu_fecha2.
+*      req_data3-req_qty = pu_atp1020.
+      APPEND req_data3.
+
+  ENDCASE.
+ENDFORM. " LLEBA_BAPI_CENT_NOFAV
+*&---------------------------------------------------------------------*
+*&      Form  MODIFICA_NECESIDAD1
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->P_ST_ALV1_2_MATNR  text
+*      -->P_GL_WERKS  text
+*      -->P_TI_BAPISSHDIN  text
+*----------------------------------------------------------------------*
+FORM modifica_necesidad1 USING pu_matnr
+                                   pu_werks
+                                   p_req_data TYPE tty_bapisshdin.
+
+  DATA: gwa_requirement_param1         LIKE cm60r.
+  CLEAR: gwa_requirement_param1.
+  gwa_requirement_param1-status = 'X'.
+  gwa_requirement_param1-trtyp = 'X'.
+  gwa_requirement_param1-syncron = 'X'.
+  CALL FUNCTION 'BAPI_REQUIREMENTS_CHANGE'
+        EXPORTING
+          material                       = pu_matnr
+          plant                          = pu_werks
+          requirementstype               = 'VSF'
+          version                        = '00'
+          reqmtsplannumber               = st_pbim-pbdnr
+          vers_activ                     = 'X'
+          requirement_param              = gwa_requirement_param1
+*   MRP_AREA                       =
+         do_commit                      = ' '
+         update_mode                    = 'X'
+         delete_old                     = 'X'
+*   NO_WITHDR                      = ' '
+*   MATERIAL_EVG                   =
+* IMPORTING
+*   REQUIREMENT_ITEM_OUT           =
+        TABLES
+         requirements_schedule_in       = p_req_data[]
+*   REQUIREMENTS_CHAR_IN           =
+          return                         = return[].
+*  IF return[] IS INITIAL.
+*    CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
+*      EXPORTING
+*        wait = 'X'.
+*    CLEAR:st_log.
+*    st_log-matnr = pu_matnr.
+*    st_log-werks = pu_werks.
+*    st_log-msgv1 = 'Se generó las necesidades correctamente'.
+*    st_log-id = c_i.
+*    MOVE: 'I' TO st_log-msgtyp.
+*              return-number  TO st_log-msgnr,
+*              return-id  TO st_log-msgid.
+*    APPEND st_log TO ti_log.
+*  ELSE.
+*    LOOP AT return.
+*      CLEAR:st_log.
+*      st_log-matnr = pu_matnr.
+*      st_log-werks = pu_werks.
+*      st_log-msgv1 = return-message.
+*      st_log-id = c_e.
+*      MOVE: return-type TO st_log-msgtyp,
+*              return-number  TO st_log-msgnr,
+*              return-id  TO st_log-msgid.
+*      APPEND st_log TO ti_log.
+*    ENDLOOP.
+*  ENDIF.
+ENDFORM. " MODIFICA_NECESIDAD1
+*&---------------------------------------------------------------------*
+*&      Form  CREA_NECESIDAD1
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->P_ST_ALV1_2_MATNR  text
+*      -->P_GL_WERKS  text
+*      -->P_I_REQUIREMENTS_SCHEDULE_IN2[]  text
+*----------------------------------------------------------------------*
+FORM crea_necesidad1 USING pu_matnr
+                               pu_werks
+                               p_i_requirements_schedule_in TYPE tty_bapisshdin.
+
+  CLEAR w_bapisitemr.
+  w_bapisitemr-material   = pu_matnr.
+  w_bapisitemr-plant      = pu_werks.
+  w_bapisitemr-requ_type  = 'VSF'.
+  w_bapisitemr-version    = '00'.
+  w_bapisitemr-vers_activ = 'X'.
+*  w_bapisitemr-req_number = c_reqmtsplannumber.
+
+
+  CALL FUNCTION 'BAPI_REQUIREMENTS_CREATE'
+    EXPORTING
+      requirements_item        = w_bapisitemr
+    TABLES
+      requirements_schedule_in = p_i_requirements_schedule_in
+      return                   = i_bapireturn1.
+
+
+ENDFORM. " CREA_NECESIDAD1
+*&---------------------------------------------------------------------*
+*&      Form  LLEBA_BAPI_CENT_NOFAV2000
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      -->P_ST_ALV1_2_WERKS_F  text
+*      -->P_ST_ALV1_2_ATP2010  text
+*      -->P_ST_ALV1_2_ATP2020  text
+*      -->P_L_FECHA2  text
+*      -->P_ST_ALV1_2_MEINS  text
+*      -->P_ST_ALV1_2_NEC_P2010  text
+*      -->P_ST_ALV1_2_NEC_P2020  text
+*----------------------------------------------------------------------*
+FORM lleba_bapi_cent_nofav2000 USING pu_werks_f
+                                     pu_atp2010
+                                     pu_atp2020
+*                                     pu_atp1091
+                                     pu_fecha2
+                                     pu_meins
+                                     pu_necp2010
+                                     pu_necp2020.
+*                                     pu_necp1091.
+  CASE pu_werks_f.
+    WHEN '2010'.
+
+      gl_atp2020 = pu_atp2020 - pu_necp2020.
+      IF gl_atp2020 GT 0.
+        i_requirements_schedule_in2-req_qty   = pu_atp2020.
+        req_data2-req_qty = pu_atp2020.
+      ELSE.
+        i_requirements_schedule_in2-req_qty   = 0.
+        req_data2-req_qty = 0.
+      ENDIF.
+      i_requirements_schedule_in2-date_type = '1'.
+      i_requirements_schedule_in2-req_date  = pu_fecha2.
+*        i_requirements_schedule_in2-req_qty   = pu_atp1020.
+      i_requirements_schedule_in2-unit      = pu_meins.
+      APPEND i_requirements_schedule_in2.
+      req_data2-date_type = 1.
+      req_data2-req_date = pu_fecha2.
+      req_data2-req_qty = pu_atp2020.
+      APPEND req_data2.
+    WHEN '2020'.
+
+      gl_atp2010 = pu_atp2010 - pu_necp2010.
+      IF gl_atp1010 GT 0.
+        i_requirements_schedule_in2-req_qty   = pu_atp2010.
+        req_data2-req_qty = pu_atp2010.
+      ELSE.
+        i_requirements_schedule_in2-req_qty   = 0.
+        req_data2-req_qty   = 0.
+      ENDIF.
+      i_requirements_schedule_in2-date_type = '1'.
+      i_requirements_schedule_in2-req_date  = pu_fecha2.
+*      i_requirements_schedule_in2-req_qty   = pu_atp1010.
+      i_requirements_schedule_in2-unit      = pu_meins.
+      APPEND i_requirements_schedule_in2.
+      req_data2-date_type = 1.
+      req_data2-req_date = pu_fecha2.
+*      req_data2-req_qty = pu_atp2010.
+      APPEND req_data2.
+
+  ENDCASE.
+
+ENDFORM. " LLEBA_BAPI_CENT_NOFAV2000
