@@ -1,0 +1,1392 @@
+*&---------------------------------------------------------------------*
+*& Include          ZMMP0001_F00
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Form f_buscar_ruta.
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      --> P_RUTA
+*&---------------------------------------------------------------------*
+FORM f_buscar_ruta  USING    pi_ruta.
+  DATA: lv_rc TYPE i,
+        lv_tx TYPE string.
+
+  DATA: lt_file_table TYPE filetable,
+        ls_file_table TYPE file_table.
+
+  lv_tx = TEXT-s01.
+  CALL METHOD cl_gui_frontend_services=>file_open_dialog
+    EXPORTING
+      file_filter  = 'Excel Files (*.xlsx)|*.xlsx'
+      window_title = lv_tx
+    CHANGING
+      file_table   = lt_file_table
+      rc           = lv_rc.
+  IF sy-subrc = 0.
+    READ TABLE lt_file_table INTO ls_file_table INDEX 1.
+    pi_ruta = ls_file_table-filename.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form f_leer_archivo_excel
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM f_leer_archivo_excel .
+  DATA   lv_matnr         TYPE matnr18.
+  DATA : lv_filename      TYPE string,
+         lt_records       TYPE solix_tab,
+         lv_headerxstring TYPE xstring,
+         lv_filelength    TYPE i.
+
+  DATA lv_nro_reg TYPE i.
+  DATA lv_cab     TYPE c LENGTH 1.
+  DATA lv_vrtkz   TYPE eban-vrtkz.
+  DATA lv_knttp   TYPE eban-knttp.
+
+  REFRESH:gdt_excel.
+
+  lv_filename = p_ruta.
+
+  CALL FUNCTION 'GUI_UPLOAD'
+    EXPORTING
+      filename                = lv_filename
+      filetype                = 'BIN'
+    IMPORTING
+      filelength              = lv_filelength
+      header                  = lv_headerxstring
+    TABLES
+      data_tab                = lt_records
+    EXCEPTIONS
+      file_open_error         = 1
+      file_read_error         = 2
+      no_batch                = 3
+      gui_refuse_filetransfer = 4
+      invalid_type            = 5
+      no_authority            = 6
+      unknown_error           = 7
+      bad_data_format         = 8
+      header_not_allowed      = 9
+      separator_not_allowed   = 10
+      header_too_long         = 11
+      unknown_dp_error        = 12
+      access_denied           = 13
+      dp_out_of_memory        = 14
+      disk_full               = 15
+      dp_timeout              = 16
+      OTHERS                  = 17.
+
+  IF sy-subrc EQ 0.
+    "convert binary data to xstring
+    "if you are using cl_fdt_xl_spreadsheet in odata then skips this step
+    "as excel file will already be in xstring
+    CALL FUNCTION 'SCMS_BINARY_TO_XSTRING'
+      EXPORTING
+        input_length = lv_filelength
+      IMPORTING
+        buffer       = lv_headerxstring
+      TABLES
+        binary_tab   = lt_records
+      EXCEPTIONS
+        failed       = 1
+        OTHERS       = 2.
+
+    IF sy-subrc <> 0.
+      "Implement suitable error handling here
+    ENDIF.
+
+    DATA : lo_excel_ref TYPE REF TO cl_fdt_xl_spreadsheet .
+
+    TRY .
+        lo_excel_ref = NEW cl_fdt_xl_spreadsheet(
+                                document_name = lv_filename
+                                xdocument     = lv_headerxstring ) .
+      CATCH cx_fdt_excel_core.
+        "Implement suitable error handling here
+    ENDTRY .
+
+    "Get List of Worksheets
+    lo_excel_ref->if_fdt_doc_spreadsheet~get_worksheet_names(
+      IMPORTING
+        worksheet_names = DATA(lt_worksheets) ).
+
+    IF NOT lt_worksheets IS INITIAL.
+      READ TABLE lt_worksheets INTO DATA(lv_woksheetname) INDEX 1.
+
+      DATA(lo_data_ref) = lo_excel_ref->if_fdt_doc_spreadsheet~get_itab_from_worksheet(
+                                               lv_woksheetname ).
+      "now you have excel work sheet data in dyanmic internal table
+      ASSIGN lo_data_ref->* TO <ft_data>.
+*lv_nro_reg
+      IF <ft_data> IS ASSIGNED.
+        LOOP AT <ft_data> ASSIGNING FIELD-SYMBOL(<fs_data>) FROM 2.
+
+          APPEND INITIAL LINE TO gdt_excel ASSIGNING FIELD-SYMBOL(<fs_excel>).
+
+          ASSIGN COMPONENT 'A' OF STRUCTURE <fs_data> TO FIELD-SYMBOL(<fs_field_a>).
+          IF <fs_field_a> IS ASSIGNED.
+            <fs_excel>-bnfpo = <fs_field_a>.
+          ENDIF.
+
+          ASSIGN COMPONENT 'B' OF STRUCTURE <fs_data> TO FIELD-SYMBOL(<fs_field_b>).
+          IF <fs_field_b> IS ASSIGNED.
+            <fs_excel>-tipo = <fs_field_b>.
+          ENDIF.
+
+          ASSIGN COMPONENT 'C' OF STRUCTURE <fs_data> TO FIELD-SYMBOL(<fs_field_c>).
+          IF <fs_field_c> IS ASSIGNED.
+            <fs_excel>-bsart = <fs_field_c>.
+          ENDIF.
+
+          ASSIGN COMPONENT 'D' OF STRUCTURE <fs_data> TO FIELD-SYMBOL(<fs_field_d>).
+          IF <fs_field_d> IS ASSIGNED.
+            <fs_excel>-knttp = <fs_field_d>.
+            IF <fs_excel>-tipo EQ 'P'.
+              lv_knttp = <fs_excel>-knttp.
+            ENDIF.
+            <fs_excel>-knttp_ = lv_knttp.
+          ENDIF.
+
+          ASSIGN COMPONENT 'E' OF STRUCTURE <fs_data> TO FIELD-SYMBOL(<fs_field_e>).
+          IF <fs_field_e> IS ASSIGNED.
+            <fs_excel>-werks = <fs_field_e>.
+          ENDIF.
+
+          ASSIGN COMPONENT 'F' OF STRUCTURE <fs_data> TO FIELD-SYMBOL(<fs_field_f>).
+          IF <fs_field_f> IS ASSIGNED.
+            CLEAR lv_matnr.
+            lv_matnr = |{ <fs_field_f> ALPHA = IN }|.
+            <fs_excel>-matnr = lv_matnr.
+          ENDIF.
+
+          ASSIGN COMPONENT 'G' OF STRUCTURE <fs_data> TO FIELD-SYMBOL(<fs_field_g>).
+          IF <fs_field_g> IS ASSIGNED.
+            <fs_excel>-afnam = <fs_field_g>.
+          ENDIF.
+
+          ASSIGN COMPONENT 'H' OF STRUCTURE <fs_data> TO FIELD-SYMBOL(<fs_field_h>).
+          IF <fs_field_h> IS ASSIGNED.
+            <fs_excel>-waers = <fs_field_h>.
+          ENDIF.
+
+          ASSIGN COMPONENT 'I' OF STRUCTURE <fs_data> TO FIELD-SYMBOL(<fs_field_i>).
+          IF <fs_field_i> IS ASSIGNED.
+            <fs_excel>-preis = <fs_field_i>.
+          ENDIF.
+
+          ASSIGN COMPONENT 'J' OF STRUCTURE <fs_data> TO FIELD-SYMBOL(<fs_field_j>).
+          IF <fs_field_j> IS ASSIGNED.
+            <fs_excel>-menge = <fs_field_j>.
+          ENDIF.
+
+          ASSIGN COMPONENT 'K' OF STRUCTURE <fs_data> TO FIELD-SYMBOL(<fs_field_k>).
+          IF <fs_field_k> IS ASSIGNED.
+            <fs_excel>-bmein = <fs_field_k>.
+          ENDIF.
+
+          ASSIGN COMPONENT 'L' OF STRUCTURE <fs_data> TO FIELD-SYMBOL(<fs_field_l>).
+          IF <fs_field_l> IS ASSIGNED.
+            <fs_excel>-flief = |{ <fs_field_l> ALPHA = IN }|.
+          ENDIF.
+
+          ASSIGN COMPONENT 'M' OF STRUCTURE <fs_data> TO FIELD-SYMBOL(<fs_field_m>).
+          FIND '.' IN <fs_field_m>.
+          IF sy-subrc EQ 0.
+            CONCATENATE <fs_field_m>+6(4) <fs_field_m>+3(2) <fs_field_m>(2)
+            INTO <fs_excel>-startdate.
+          ELSE.
+            <fs_excel>-startdate = <fs_field_m>.
+          ENDIF.
+
+          ASSIGN COMPONENT 'N' OF STRUCTURE <fs_data> TO FIELD-SYMBOL(<fs_field_n>).
+          FIND '.' IN <fs_field_n>.
+          IF sy-subrc EQ 0.
+            CONCATENATE <fs_field_n>+6(4) <fs_field_n>+3(2) <fs_field_n>(2)
+            INTO <fs_excel>-enddate.
+          ELSE.
+            <fs_excel>-enddate = <fs_field_n>.
+          ENDIF.
+
+          ASSIGN COMPONENT 'O' OF STRUCTURE <fs_data> TO FIELD-SYMBOL(<fs_field_o>).
+          IF <fs_field_o> IS ASSIGNED.
+            <fs_excel>-texto_pos = <fs_field_o>.
+          ENDIF.
+
+          ASSIGN COMPONENT 'P' OF STRUCTURE <fs_data> TO FIELD-SYMBOL(<fs_field_p>).
+          IF <fs_field_p> IS ASSIGNED.
+            <fs_excel>-vrtkz = <fs_field_p>.
+            IF <fs_excel>-tipo EQ 'P'.
+              lv_vrtkz = <fs_excel>-vrtkz.
+            ENDIF.
+            <fs_excel>-vrtkz_ = lv_vrtkz.
+          ENDIF.
+
+          ASSIGN COMPONENT 'Q' OF STRUCTURE <fs_data> TO FIELD-SYMBOL(<fs_field_q>).
+          IF <fs_field_q> IS ASSIGNED.
+            <fs_excel>-dist_cant  = <fs_field_q>.
+          ENDIF.
+
+          ASSIGN COMPONENT 'R' OF STRUCTURE <fs_data> TO FIELD-SYMBOL(<fs_field_r>).
+          IF <fs_field_r> IS ASSIGNED.
+            <fs_excel>-vproz = <fs_field_r>.
+          ENDIF.
+
+          ASSIGN COMPONENT 'S' OF STRUCTURE <fs_data> TO FIELD-SYMBOL(<fs_field_s>).
+          IF <fs_field_s> IS ASSIGNED.
+            <fs_excel>-imputacion = <fs_field_s>.
+          ENDIF.
+          <fs_excel>-erdat = sy-uname.
+          <fs_excel>-badat = p_fecha.
+        ENDLOOP.
+      ENDIF.
+    ENDIF.
+  ELSE.
+    MESSAGE ID sy-msgid TYPE 'S' NUMBER sy-msgno
+       WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4 DISPLAY LIKE 'E'.
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form f_validar_excel
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      <-- LV_ERROR
+*&---------------------------------------------------------------------*
+FORM f_validar_excel USING pi_opcional  CHANGING po_error.
+  REFRESH:gdt_pritem,gdt_pritemx,gdt_pritemtext,gdt_praccount,gdt_praccountx.
+  CLEAR:gwa_prheader,gwa_prheaderx.
+
+  DATA lv_id   TYPE c.
+  DATA lv_id_d TYPE c.
+  DATA li_ind  TYPE i.
+
+  LOOP AT gdt_excel ASSIGNING FIELD-SYMBOL(<fs_excel>).
+    AT NEW bnfpo.
+      CLEAR:gv_pos,li_ind,lv_id_d.
+      IF <fs_excel>-tipo EQ 'P'.
+        lv_id = <fs_excel>-tipo.
+      ELSE.
+        <fs_excel>-icon = '@0A@'.
+        PERFORM f_log_errores USING '@0A@' TEXT-e28 CHANGING <fs_excel>-log_proces.
+      ENDIF.
+    ENDAT.
+
+    IF lv_id EQ <fs_excel>-tipo AND li_ind > 0.
+      <fs_excel>-icon = '@0A@'.
+      PERFORM f_log_errores USING '@0A@' TEXT-e29 CHANGING <fs_excel>-log_proces.
+    ENDIF.
+
+    ADD 1 TO li_ind.
+
+    IF <fs_excel>-tipo EQ 'P'.
+      IF <fs_excel>-bsart IS INITIAL.
+        <fs_excel>-icon = '@0A@'.
+        PERFORM f_log_errores USING '@0A@' TEXT-e00 CHANGING <fs_excel>-log_proces.
+      ELSE.
+        IF <fs_excel>-bsart NOT IN gr_bsart.
+          <fs_excel>-icon = '@0A@'.
+          PERFORM f_log_errores USING '@0A@' TEXT-e01 CHANGING <fs_excel>-log_proces.
+        ENDIF.
+      ENDIF.
+
+      IF <fs_excel>-knttp IS INITIAL.
+        <fs_excel>-icon = '@0A@'.
+        PERFORM f_log_errores USING '@0A@' TEXT-e02 CHANGING <fs_excel>-log_proces.
+      ELSE.
+        IF <fs_excel>-knttp CO 'PKF'.
+        ELSE.
+          <fs_excel>-icon = '@0A@'.
+          PERFORM f_log_errores USING '@0A@' TEXT-e03 CHANGING <fs_excel>-log_proces.
+        ENDIF.
+      ENDIF.
+
+      IF <fs_excel>-werks IS INITIAL.
+        <fs_excel>-icon = '@0A@'.
+        PERFORM f_log_errores USING '@0A@' TEXT-e04 CHANGING <fs_excel>-log_proces.
+      ELSE.
+        READ TABLE gdt_t001w TRANSPORTING NO FIELDS WITH KEY werks = <fs_excel>-werks.
+        IF sy-subrc NE 0.
+          <fs_excel>-icon = '@0A@'.
+          PERFORM f_log_errores USING '@0A@' TEXT-e05 CHANGING <fs_excel>-log_proces.
+        ENDIF.
+      ENDIF.
+
+      IF <fs_excel>-matnr IS INITIAL.
+        <fs_excel>-icon = '@0A@'.
+        PERFORM f_log_errores USING '@0A@' TEXT-e06 CHANGING <fs_excel>-log_proces.
+      ELSE.
+        READ TABLE gdt_mara ASSIGNING FIELD-SYMBOL(<fs_mara>) WITH KEY matnr = <fs_excel>-matnr.
+        IF sy-subrc NE 0.
+          <fs_excel>-icon = '@0A@'.
+          PERFORM f_log_errores USING '@0A@' TEXT-e07 CHANGING <fs_excel>-log_proces.
+        ELSE.
+          READ TABLE gdt_makt ASSIGNING FIELD-SYMBOL(<fs_makt>) WITH KEY matnr = <fs_excel>-matnr.
+          IF sy-subrc EQ 0.
+            <fs_excel>-txz01 = <fs_makt>-maktx.
+          ENDIF.
+          <fs_excel>-meins = <fs_mara>-meins.
+        ENDIF.
+      ENDIF.
+
+      IF <fs_excel>-afnam IS INITIAL.
+        <fs_excel>-icon = '@0A@'.
+        PERFORM f_log_errores USING '@0A@' TEXT-e08 CHANGING <fs_excel>-log_proces.
+      ELSE.
+        READ TABLE gdt_zmm_afnam TRANSPORTING NO FIELDS WITH KEY afnam = <fs_excel>-afnam
+                                                                 bukrs = p_bukrs.
+        IF sy-subrc NE 0.
+          <fs_excel>-icon = '@0A@'.
+          PERFORM f_log_errores USING '@0A@' TEXT-e09 CHANGING <fs_excel>-log_proces.
+        ENDIF.
+      ENDIF.
+
+      IF <fs_excel>-waers IS INITIAL.
+        <fs_excel>-icon = '@0A@'.
+        PERFORM f_log_errores USING '@0A@' TEXT-e10 CHANGING <fs_excel>-log_proces.
+      ELSE.
+        READ TABLE gdt_tcurc TRANSPORTING NO FIELDS WITH KEY waers = <fs_excel>-waers.
+        IF sy-subrc NE 0.
+          <fs_excel>-icon = '@0A@'.
+          PERFORM f_log_errores USING '@0A@' TEXT-e11 CHANGING <fs_excel>-log_proces.
+        ENDIF.
+      ENDIF.
+
+      IF <fs_excel>-preis IS INITIAL.
+        <fs_excel>-icon = '@0A@'.
+        PERFORM f_log_errores USING '@0A@' TEXT-e12 CHANGING <fs_excel>-log_proces.
+      ELSE.
+        CLEAR gv_imp.
+        gv_imp = <fs_excel>-preis.
+        REPLACE '.' IN gv_imp WITH space.
+        REPLACE ',' IN gv_imp WITH space.
+        CONDENSE gv_imp.
+        IF gv_imp CO '0123456789'.
+
+        ELSE.
+          <fs_excel>-icon = '@0A@'.
+          PERFORM f_log_errores USING '@0A@' TEXT-e13 CHANGING <fs_excel>-log_proces.
+        ENDIF.
+      ENDIF.
+
+      IF <fs_excel>-menge IS INITIAL.
+        <fs_excel>-icon = '@0A@'.
+        PERFORM f_log_errores USING '@0A@' TEXT-e14 CHANGING <fs_excel>-log_proces.
+      ELSE.
+        CLEAR gv_imp.
+        gv_imp = <fs_excel>-menge.
+        REPLACE '.' IN gv_imp WITH space.
+        REPLACE ',' IN gv_imp WITH space.
+        CONDENSE gv_imp.
+        IF gv_imp CO '0123456789'.
+
+        ELSE.
+          <fs_excel>-icon = '@0A@'.
+          PERFORM f_log_errores USING '@0A@' TEXT-e15 CHANGING <fs_excel>-log_proces.
+        ENDIF.
+      ENDIF.
+
+      IF <fs_excel>-flief IS INITIAL.
+***        {-@PE002
+***        <fs_excel>-icon = '@0A@'.
+***        PERFORM f_log_errores USING '@0A@' TEXT-e16 CHANGING <fs_excel>-log_proces.
+***        }-@PE002
+      ELSE.
+        READ TABLE gdt_lfa1 ASSIGNING FIELD-SYMBOL(<fs_lfa1>) WITH KEY lifnr = <fs_excel>-flief.
+        IF sy-subrc NE 0.
+          <fs_excel>-icon = '@0A@'.
+          PERFORM f_log_errores USING '@0A@' TEXT-e17 CHANGING <fs_excel>-log_proces.
+        ELSE.
+          CONCATENATE <fs_lfa1>-name1 <fs_lfa1>-name2 INTO <fs_excel>-name_provee
+          SEPARATED BY space.
+        ENDIF.
+      ENDIF.
+
+      IF <fs_excel>-startdate IS INITIAL.
+        <fs_excel>-icon = '@0A@'.
+        PERFORM f_log_errores USING '@0A@' TEXT-e18 CHANGING <fs_excel>-log_proces.
+      ELSE.
+        IF <fs_excel>-startdate CO '0123456789.'.
+        ELSE.
+          <fs_excel>-icon = '@0A@'.
+          PERFORM f_log_errores USING '@0A@' TEXT-e19 CHANGING <fs_excel>-log_proces.
+        ENDIF.
+      ENDIF.
+
+      IF <fs_excel>-enddate IS INITIAL.
+        <fs_excel>-icon = '@0A@'.
+        PERFORM f_log_errores USING '@0A@' TEXT-e20 CHANGING <fs_excel>-log_proces.
+      ELSE.
+        IF <fs_excel>-enddate CO '0123456789.'.
+        ELSE.
+          <fs_excel>-icon = '@0A@'.
+          PERFORM f_log_errores USING '@0A@' TEXT-e21 CHANGING <fs_excel>-log_proces.
+        ENDIF.
+      ENDIF.
+
+      IF <fs_excel>-vrtkz IS INITIAL.
+        <fs_excel>-icon = '@0A@'.
+        PERFORM f_log_errores USING '@0A@' TEXT-e22 CHANGING <fs_excel>-log_proces.
+      ELSE.
+        IF <fs_excel>-vrtkz CO '012'.
+        ELSE.
+          <fs_excel>-icon = '@0A@'.
+          PERFORM f_log_errores USING '@0A@' TEXT-e23 CHANGING <fs_excel>-log_proces.
+        ENDIF.
+      ENDIF.
+
+    ELSE. "D
+      IF <fs_excel>-knttp_ EQ 'K'.
+        READ TABLE gdt_tka02  ASSIGNING FIELD-SYMBOL(<fs_tka02>) WITH KEY bukrs = p_bukrs.
+        IF sy-subrc EQ 0.
+          READ TABLE gdt_cskt ASSIGNING FIELD-SYMBOL(<fs_cskt>) WITH KEY kokrs = <fs_tka02>-kokrs
+                                                                         kostl = <fs_excel>-imputacion.
+          IF sy-subrc NE 0.
+            <fs_excel>-icon = '@0A@'.
+            PERFORM f_log_errores USING '@0A@' TEXT-e24 CHANGING <fs_excel>-log_proces.
+          ELSE.
+            <fs_excel>-ktext = <fs_cskt>-ktext.
+          ENDIF.
+        ENDIF.
+      ELSEIF <fs_excel>-knttp_ EQ 'P'.
+        READ TABLE gdt_prps TRANSPORTING NO FIELDS WITH KEY posid = <fs_excel>-imputacion.
+        IF sy-subrc EQ 0.
+          <fs_excel>-icon = '@0A@'.
+          PERFORM f_log_errores USING '@0A@' TEXT-e25 CHANGING <fs_excel>-log_proces.
+        ENDIF.
+      ELSEIF <fs_excel>-knttp_ EQ 'F'.
+        READ TABLE gdt_aufk TRANSPORTING NO FIELDS WITH KEY aufnr = <fs_excel>-imputacion.
+        IF sy-subrc EQ 0.
+          <fs_excel>-icon = '@0A@'.
+          PERFORM f_log_errores USING '@0A@' TEXT-e26 CHANGING <fs_excel>-log_proces.
+        ENDIF.
+      ENDIF.
+      lv_id_d = abap_true.
+    ENDIF.
+
+    READ TABLE gdt_t024e ASSIGNING FIELD-SYMBOL(<fs_t024e>) WITH KEY bukrs = p_bukrs.
+    IF sy-subrc EQ 0.
+      <fs_excel>-ekorg = <fs_t024e>-ekorg.
+    ENDIF.
+
+    READ TABLE gdt_marc ASSIGNING FIELD-SYMBOL(<fs_marc>) WITH KEY matnr = <fs_excel>-matnr
+                                                                   werks = <fs_excel>-werks.
+    IF sy-subrc EQ 0.
+      <fs_excel>-ekgrp = <fs_marc>-ekgrp.
+    ENDIF.
+
+    IF pi_opcional IS NOT INITIAL.
+
+      IF <fs_excel>-tipo EQ 'P'.
+        gwa_prheader-pr_type = <fs_excel>-bsart.
+        gwa_prheaderx-pr_type = abap_true.
+
+        APPEND INITIAL LINE TO gdt_pritem ASSIGNING FIELD-SYMBOL(<fs_pritem>).
+        <fs_pritem>-preq_item   = <fs_excel>-bnfpo.
+        <fs_pritem>-pur_group   = <fs_excel>-ekgrp.
+        <fs_pritem>-preq_name   = <fs_excel>-afnam.
+        <fs_pritem>-material    = <fs_excel>-matnr.
+        <fs_pritem>-plant       = <fs_excel>-werks.
+        <fs_pritem>-quantity    = <fs_excel>-menge.
+        <fs_pritem>-preq_date   = <fs_excel>-badat.
+        <fs_pritem>-preq_price  = <fs_excel>-preis.
+        <fs_pritem>-acctasscat  = <fs_excel>-knttp.
+        <fs_pritem>-purch_org   = <fs_excel>-ekorg.
+        <fs_pritem>-producttype = '2'.
+        <fs_pritem>-startdate   = <fs_excel>-startdate.
+        <fs_pritem>-enddate     = <fs_excel>-enddate.
+        <fs_pritem>-unit        = <fs_excel>-meins.
+        <fs_pritem>-des_vendor  = <fs_excel>-flief.
+        <fs_pritem>-po_unit     = <fs_excel>-bmein.
+        IF <fs_excel>-vrtkz EQ 0.
+        ELSE.
+          <fs_pritem>-distrib     = <fs_excel>-vrtkz.
+          <fs_pritem>-part_inv    = '2'.
+        ENDIF.
+
+        APPEND INITIAL LINE TO gdt_pritemx ASSIGNING FIELD-SYMBOL(<fs_pritemx>).
+        <fs_pritemx>-preq_item = <fs_excel>-bnfpo.
+        <fs_pritemx>-pur_group = <fs_pritemx>-preq_name = <fs_pritemx>-material    =
+        <fs_pritemx>-plant = <fs_pritemx>-quantity = <fs_pritemx>-preq_date        =
+        <fs_pritemx>-preq_price = <fs_pritemx>-acctasscat = <fs_pritemx>-purch_org =
+        <fs_pritemx>-producttype = <fs_pritemx>-startdate = <fs_pritemx>-enddate   =
+        <fs_pritemx>-unit = <fs_pritemx>-des_vendor = <fs_pritemx>-po_unit         =
+        <fs_pritemx>-distrib = abap_true.
+
+        APPEND INITIAL LINE TO gdt_pritemtext ASSIGNING FIELD-SYMBOL(<fs_pritemtext>).
+        <fs_pritemtext>-preq_item = <fs_excel>-bnfpo.
+        <fs_pritemtext>-text_id = 'B01'.
+        <fs_pritemtext>-text_line = <fs_excel>-texto_pos(132).
+        ADD 1 TO gv_text_form.
+        <fs_pritemtext>-text_form = gv_text_form.
+
+        APPEND INITIAL LINE TO gdt_pritemtext ASSIGNING <fs_pritemtext>.
+        <fs_pritemtext>-preq_item = <fs_excel>-bnfpo.
+        <fs_pritemtext>-text_id = 'B01'.
+        <fs_pritemtext>-text_line = <fs_excel>-texto_pos+132(88).
+        ADD 1 TO gv_text_form.
+        <fs_pritemtext>-text_form = gv_text_form.
+*
+*        APPEND INITIAL LINE TO gdt_pritemtext ASSIGNING <fs_pritemtext>.
+*        <fs_pritemtext>-preq_item = <fs_excel>-bnfpo.
+*        <fs_pritemtext>-text_id = 'B01'.
+*        <fs_pritemtext>-text_line = <fs_excel>-texto_pos+180(39).
+*        ADD 1 TO gv_text_form.
+*        <fs_pritemtext>-text_form = gv_text_form.
+
+        DELETE gdt_pritemtext WHERE text_line EQ space.
+      ELSE.
+
+        APPEND INITIAL LINE TO gdt_praccountx ASSIGNING FIELD-SYMBOL(<fs_praccountx>).
+        <fs_praccountx>-preq_item = <fs_excel>-bnfpo.
+
+
+        ADD 1 TO gv_pos.
+        CASE <fs_excel>-vrtkz_.
+          WHEN 1 OR 0.
+            APPEND INITIAL LINE TO gdt_praccount ASSIGNING FIELD-SYMBOL(<fs_praccount>).
+            <fs_praccount>-preq_item = <fs_excel>-bnfpo.
+            <fs_praccount>-serial_no = <fs_praccountx>-serial_no = gv_pos.
+            <fs_praccount>-quantity  = <fs_excel>-dist_cant.
+            <fs_praccountx>-quantity = abap_true.
+          WHEN 2.
+            APPEND INITIAL LINE TO gdt_praccount ASSIGNING <fs_praccount>.
+            <fs_praccount>-preq_item  = <fs_excel>-bnfpo.
+            <fs_praccount>-serial_no = <fs_praccountx>-serial_no = gv_pos.
+            <fs_praccount>-distr_perc = <fs_excel>-vproz.
+            <fs_praccountx>-distr_perc = abap_true.
+        ENDCASE.
+
+        IF <fs_excel>-knttp_ EQ 'K'.
+          <fs_praccount>-costcenter = <fs_excel>-imputacion."(23)
+          <fs_praccountx>-costcenter = abap_true.
+        ELSEIF <fs_excel>-knttp_ EQ 'P'.
+          <fs_praccount>-wbs_element = <fs_excel>-imputacion.
+          <fs_praccountx>-wbs_element = abap_true.
+        ELSEIF <fs_excel>-knttp_ EQ 'F'.
+          <fs_praccount>-orderid = <fs_excel>-imputacion.
+          <fs_praccountx>-orderid = abap_true.
+        ENDIF.
+
+      ENDIF.
+    ENDIF.
+
+    AT END OF bnfpo.
+      IF lv_id_d IS INITIAL.
+        <fs_excel>-icon = '@0A@'.
+        PERFORM f_log_errores USING '@0A@' TEXT-e29 CHANGING <fs_excel>-log_proces.
+      ENDIF.
+    ENDAT.
+  ENDLOOP.
+
+  IF pi_opcional IS NOT INITIAL.
+    CALL FUNCTION 'BAPI_PR_CREATE'
+      EXPORTING
+        prheader     = gwa_prheader
+        prheaderx    = gwa_prheaderx
+        testrun      = 'X'
+      IMPORTING
+        number       = gv_number
+        prheaderexp  = gwa_prheaderexp
+      TABLES
+        return       = gdt_return
+        pritem       = gdt_pritem
+        pritemx      = gdt_pritemx
+        praccount    = gdt_praccount
+        praccountx   = gdt_praccountx
+        pritemtext   = gdt_pritemtext
+        prheadertext = gdt_prheadertext.
+
+    DATA li_pos TYPE i.
+
+    LOOP AT gdt_return ASSIGNING FIELD-SYMBOL(<fs_return>) WHERE type EQ 'E'
+                                                             AND id NE 'BAPI'.
+      CLEAR li_pos.
+      LOOP AT gdt_excel ASSIGNING <fs_excel> WHERE tipo EQ 'P'.
+        ADD 1 TO li_pos.
+        IF li_pos EQ <fs_return>-row.
+          <fs_excel>-icon = '@0A@'.
+          <fs_excel>-log_proces = <fs_excel>-log_proces && |,| && <fs_return>-message.
+        ENDIF.
+      ENDLOOP.
+    ENDLOOP.
+    CLEAR gv_number.
+    go_alv->refresh( ).
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form f_mostrar_alv
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM f_mostrar_alv .
+  DATA: lr_col_tab TYPE REF TO cl_salv_columns_table,
+        lr_col     TYPE REF TO cl_salv_column_table,
+        lr_col_ref TYPE   salv_t_column_ref,
+        ls_col_ref LIKE LINE OF lr_col_ref,
+        lo_column  TYPE REF TO cl_salv_column_list.
+  DATA: lx_msg        TYPE REF TO cx_salv_msg,
+        lr_selections TYPE REF TO cl_salv_selections,
+        lr_events     TYPE REF TO cl_salv_events_table.
+
+  TRY.
+      cl_salv_table=>factory(
+        IMPORTING
+          r_salv_table   = go_alv
+        CHANGING
+          t_table        = gdt_excel ).
+    CATCH cx_salv_msg.
+  ENDTRY.
+
+  go_alv->set_screen_status( pfstatus = 'STANDARD'
+                             report   = sy-cprog
+                             set_functions = go_alv->c_functions_all ).
+
+  gr_columns = go_alv->get_columns( ).
+
+  PERFORM f_layout_settings.
+  PERFORM f_set_toolbar.
+  PERFORM f_set_column_text.
+  PERFORM f_optimize_column_width.
+
+  lr_col_tab = go_alv->get_columns( ).
+  lr_col_tab->set_key_fixation( 'X' ).
+  lr_col_ref = lr_col_tab->get( ).
+
+* Column selection
+  lr_selections = go_alv->get_selections( ).
+  lr_selections->set_selection_mode( if_salv_c_selection_mode=>row_column ).
+
+  CREATE OBJECT go_events.
+  SET HANDLER go_events->on_user_command FOR go_alv->get_event( ).
+
+* Displaying the ALV
+  go_alv->display( ).
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form f_layout_settings
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM f_layout_settings .
+
+  DATA layout_settings TYPE REF TO cl_salv_layout.
+  DATA layout_key      TYPE salv_s_layout_key.
+
+  layout_settings = go_alv->get_layout( ).
+
+  layout_key-report = sy-repid.
+  layout_settings->set_key( layout_key ).
+  layout_settings->set_default( 'X' ).
+  layout_settings->set_save_restriction( if_salv_c_layout=>restrict_none ).
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form f_set_toolbar
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM f_set_toolbar .
+  DATA functions TYPE REF TO cl_salv_functions_list.
+
+  functions = go_alv->get_functions( ).
+  functions->set_all( 'X' ).
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form f_set_column_text
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM f_set_column_text .
+  DATA: not_found TYPE REF TO cx_salv_not_found.
+  DATA lv_scrtext_s TYPE scrtext_s.
+  DATA lv_scrtext_m TYPE scrtext_m.
+  DATA lv_scrtext_l TYPE scrtext_l.
+  DATA lv_ddic      TYPE salv_s_ddic_reference.
+
+
+  lv_scrtext_s = lv_scrtext_m = lv_scrtext_l = TEXT-t01.
+
+  TRY.
+      gr_column = gr_columns->get_column( 'BNFPO' ).
+      gr_column->set_short_text( lv_scrtext_s ).
+      gr_column->set_medium_text( lv_scrtext_m ).
+      gr_column->set_long_text( lv_scrtext_l ).
+    CATCH cx_salv_not_found INTO not_found.
+      " error handling
+  ENDTRY.
+
+  CLEAR:lv_scrtext_s,lv_scrtext_m,lv_scrtext_l.
+  lv_scrtext_s = lv_scrtext_m = lv_scrtext_l = TEXT-t02.
+
+  TRY.
+      gr_column = gr_columns->get_column( 'TIPO' ).
+      gr_column->set_short_text( lv_scrtext_s ).
+      gr_column->set_medium_text( lv_scrtext_m ).
+      gr_column->set_long_text( lv_scrtext_l ).
+      gr_column->set_output_length( '6' ).
+    CATCH cx_salv_not_found INTO not_found.
+      " error handling
+  ENDTRY.
+
+  CLEAR:lv_scrtext_s,lv_scrtext_m,lv_scrtext_l.
+  lv_scrtext_s = lv_scrtext_m = lv_scrtext_l = TEXT-t03.
+
+  TRY.
+      gr_column = gr_columns->get_column( 'BSART' ).
+      gr_column->set_short_text( lv_scrtext_s ).
+      gr_column->set_medium_text( lv_scrtext_m ).
+      gr_column->set_long_text( lv_scrtext_l ).
+    CATCH cx_salv_not_found INTO not_found.
+      " error handling
+  ENDTRY.
+
+  CLEAR:lv_scrtext_s,lv_scrtext_m,lv_scrtext_l.
+  lv_scrtext_s = lv_scrtext_m = lv_scrtext_l = TEXT-t04.
+
+  TRY.
+      gr_column = gr_columns->get_column( 'KNTTP' ).
+      gr_column->set_short_text( lv_scrtext_s ).
+      gr_column->set_medium_text( lv_scrtext_m ).
+      gr_column->set_long_text( lv_scrtext_l ).
+    CATCH cx_salv_not_found INTO not_found.
+      " error handling
+  ENDTRY.
+
+  CLEAR:lv_scrtext_s,lv_scrtext_m,lv_scrtext_l.
+  lv_scrtext_s = lv_scrtext_m = lv_scrtext_l = TEXT-t05.
+
+  TRY.
+      gr_column = gr_columns->get_column( 'WERKS' ).
+      gr_column->set_short_text( lv_scrtext_s ).
+      gr_column->set_medium_text( lv_scrtext_m ).
+      gr_column->set_long_text( lv_scrtext_l ).
+    CATCH cx_salv_not_found INTO not_found.
+      " error handling
+  ENDTRY.
+
+  CLEAR:lv_scrtext_s,lv_scrtext_m,lv_scrtext_l.
+  lv_scrtext_s = lv_scrtext_m = lv_scrtext_l = TEXT-t06.
+
+  TRY.
+      gr_column = gr_columns->get_column( 'MATNR' ).
+      gr_column->set_short_text( lv_scrtext_s ).
+      gr_column->set_medium_text( lv_scrtext_m ).
+      gr_column->set_long_text( lv_scrtext_l ).
+      gr_column->set_output_length( '12' ).
+    CATCH cx_salv_not_found INTO not_found.
+      " error handling
+  ENDTRY.
+
+  CLEAR:lv_scrtext_s,lv_scrtext_m,lv_scrtext_l.
+  lv_scrtext_s = lv_scrtext_m = lv_scrtext_l = TEXT-t07.
+
+  TRY.
+      gr_column = gr_columns->get_column( 'TXZ01' ).
+      gr_column->set_short_text( lv_scrtext_s ).
+      gr_column->set_medium_text( lv_scrtext_m ).
+      gr_column->set_long_text( lv_scrtext_l ).
+      gr_column->set_output_length( '15' ).
+    CATCH cx_salv_not_found INTO not_found.
+      " error handling
+  ENDTRY.
+
+  CLEAR:lv_scrtext_s,lv_scrtext_m,lv_scrtext_l.
+  lv_scrtext_s = lv_scrtext_m = lv_scrtext_l = TEXT-t08.
+
+  TRY.
+      gr_column = gr_columns->get_column( 'AFNAM' ).
+      gr_column->set_short_text( lv_scrtext_s ).
+      gr_column->set_medium_text( lv_scrtext_m ).
+      gr_column->set_long_text( lv_scrtext_l ).
+    CATCH cx_salv_not_found INTO not_found.
+      " error handling
+  ENDTRY.
+
+  CLEAR:lv_scrtext_s,lv_scrtext_m,lv_scrtext_l.
+  lv_scrtext_s = lv_scrtext_m = lv_scrtext_l = TEXT-t09.
+
+  TRY.
+      gr_column = gr_columns->get_column( 'WAERS' ).
+      gr_column->set_short_text( lv_scrtext_s ).
+      gr_column->set_medium_text( lv_scrtext_m ).
+      gr_column->set_long_text( lv_scrtext_l ).
+    CATCH cx_salv_not_found INTO not_found.
+      " error handling
+  ENDTRY.
+
+  CLEAR:lv_scrtext_s,lv_scrtext_m,lv_scrtext_l.
+  lv_scrtext_s = lv_scrtext_m = lv_scrtext_l = TEXT-t10.
+
+  TRY.
+      gr_column = gr_columns->get_column( 'PREIS' ).
+      gr_column->set_short_text( lv_scrtext_s ).
+      gr_column->set_medium_text( lv_scrtext_m ).
+      gr_column->set_long_text( lv_scrtext_l ).
+    CATCH cx_salv_not_found INTO not_found.
+      " error handling
+  ENDTRY.
+
+  CLEAR:lv_scrtext_s,lv_scrtext_m,lv_scrtext_l.
+  lv_scrtext_s = lv_scrtext_m = lv_scrtext_l = TEXT-t11.
+
+  TRY.
+      gr_column = gr_columns->get_column( 'MENGE' ).
+      gr_column->set_short_text( lv_scrtext_s ).
+      gr_column->set_medium_text( lv_scrtext_m ).
+      gr_column->set_long_text( lv_scrtext_l ).
+      gr_column->set_output_length( '10' ).
+    CATCH cx_salv_not_found INTO not_found.
+      " error handling
+  ENDTRY.
+
+  CLEAR:lv_scrtext_s,lv_scrtext_m,lv_scrtext_l.
+  lv_scrtext_s = lv_scrtext_m = lv_scrtext_l = TEXT-t12.
+
+  TRY.
+      gr_column = gr_columns->get_column( 'MEINS' ).
+      gr_column->set_short_text( lv_scrtext_s ).
+      gr_column->set_medium_text( lv_scrtext_m ).
+      gr_column->set_long_text( lv_scrtext_l ).
+    CATCH cx_salv_not_found INTO not_found.
+      " error handling
+  ENDTRY.
+
+  CLEAR:lv_scrtext_s,lv_scrtext_m,lv_scrtext_l.
+  lv_scrtext_s = lv_scrtext_m = lv_scrtext_l = TEXT-t13.
+
+  TRY.
+      gr_column = gr_columns->get_column( 'BMEIN' ).
+      gr_column->set_short_text( lv_scrtext_s ).
+      gr_column->set_medium_text( lv_scrtext_m ).
+      gr_column->set_long_text( lv_scrtext_l ).
+    CATCH cx_salv_not_found INTO not_found.
+      " error handling
+  ENDTRY.
+
+  CLEAR:lv_scrtext_s,lv_scrtext_m,lv_scrtext_l.
+  lv_scrtext_s = lv_scrtext_m = lv_scrtext_l = TEXT-t14.
+
+  TRY.
+      gr_column = gr_columns->get_column( 'FLIEF' ).
+      gr_column->set_short_text( lv_scrtext_s ).
+      gr_column->set_medium_text( lv_scrtext_m ).
+      gr_column->set_long_text( lv_scrtext_l ).
+    CATCH cx_salv_not_found INTO not_found.
+      " error handling
+  ENDTRY.
+
+  CLEAR:lv_scrtext_s,lv_scrtext_m,lv_scrtext_l.
+  lv_scrtext_s = lv_scrtext_m = lv_scrtext_l = TEXT-t15.
+
+  TRY.
+      gr_column = gr_columns->get_column( 'NAME_PROVEE' ).
+      gr_column->set_short_text( lv_scrtext_s ).
+      gr_column->set_medium_text( lv_scrtext_m ).
+      gr_column->set_long_text( lv_scrtext_l ).
+      gr_column->set_output_length( '15' ).
+    CATCH cx_salv_not_found INTO not_found.
+      " error handling
+  ENDTRY.
+
+  CLEAR:lv_scrtext_s,lv_scrtext_m,lv_scrtext_l.
+  lv_scrtext_s = lv_scrtext_m = lv_scrtext_l = TEXT-t16.
+
+  TRY.
+      gr_column = gr_columns->get_column( 'STARTDATE' ).
+      gr_column->set_short_text( lv_scrtext_s ).
+      gr_column->set_medium_text( lv_scrtext_m ).
+      gr_column->set_long_text( lv_scrtext_l ).
+    CATCH cx_salv_not_found INTO not_found.
+      " error handling
+  ENDTRY.
+
+  CLEAR:lv_scrtext_s,lv_scrtext_m,lv_scrtext_l.
+  lv_scrtext_s = lv_scrtext_m = lv_scrtext_l = TEXT-t17.
+
+  TRY.
+      gr_column = gr_columns->get_column( 'ENDDATE' ).
+      gr_column->set_short_text( lv_scrtext_s ).
+      gr_column->set_medium_text( lv_scrtext_m ).
+      gr_column->set_long_text( lv_scrtext_l ).
+    CATCH cx_salv_not_found INTO not_found.
+      " error handling
+  ENDTRY.
+
+  CLEAR:lv_scrtext_s,lv_scrtext_m,lv_scrtext_l.
+  lv_scrtext_s = lv_scrtext_m = lv_scrtext_l = TEXT-t18.
+
+  TRY.
+      gr_column = gr_columns->get_column( 'TEXTO_POS' ).
+      gr_column->set_short_text( lv_scrtext_s ).
+      gr_column->set_medium_text( lv_scrtext_m ).
+      gr_column->set_long_text( lv_scrtext_l ).
+      gr_column->set_output_length( '20' ).
+    CATCH cx_salv_not_found INTO not_found.
+      " error handling
+  ENDTRY.
+
+  CLEAR:lv_scrtext_s,lv_scrtext_m,lv_scrtext_l.
+  lv_scrtext_s = lv_scrtext_m = lv_scrtext_l = TEXT-t19.
+
+  TRY.
+      gr_column = gr_columns->get_column( 'VRTKZ' ).
+      gr_column->set_short_text( lv_scrtext_s ).
+      gr_column->set_medium_text( lv_scrtext_m ).
+      gr_column->set_long_text( lv_scrtext_l ).
+    CATCH cx_salv_not_found INTO not_found.
+      " error handling
+  ENDTRY.
+
+  CLEAR:lv_scrtext_s,lv_scrtext_m,lv_scrtext_l.
+  lv_scrtext_s = lv_scrtext_m = lv_scrtext_l = TEXT-t20.
+
+  TRY.
+      gr_column = gr_columns->get_column( 'DIST_CANT' ).
+      gr_column->set_short_text( lv_scrtext_s ).
+      gr_column->set_medium_text( lv_scrtext_m ).
+      gr_column->set_long_text( lv_scrtext_l ).
+      gr_column->set_output_length( '10' ).
+    CATCH cx_salv_not_found INTO not_found.
+      " error handling
+  ENDTRY.
+
+  CLEAR:lv_scrtext_s,lv_scrtext_m,lv_scrtext_l.
+  lv_scrtext_s = lv_scrtext_m = lv_scrtext_l = TEXT-t21.
+
+*  MOVE 'VPROZ' TO lv_ddic-field.
+*  MOVE 'EBKN' TO lv_ddic-table.
+
+  TRY.
+      gr_column = gr_columns->get_column( 'VPROZ' ).
+      gr_column->set_short_text( lv_scrtext_s ).
+      gr_column->set_medium_text( lv_scrtext_m ).
+      gr_column->set_long_text( lv_scrtext_l ).
+      gr_column->set_output_length( '10' ).
+*      gr_column->set_ddic_reference( lv_ddic  ).
+    CATCH cx_salv_not_found INTO not_found.
+      " error handling
+  ENDTRY.
+
+  CLEAR:lv_scrtext_s,lv_scrtext_m,lv_scrtext_l.
+  lv_scrtext_s = lv_scrtext_m = lv_scrtext_l = TEXT-t22.
+
+  TRY.
+      gr_column = gr_columns->get_column( 'IMPUTACION' ).
+      gr_column->set_short_text( lv_scrtext_s ).
+      gr_column->set_medium_text( lv_scrtext_m ).
+      gr_column->set_long_text( lv_scrtext_l ).
+      gr_column->set_output_length( '10' ).
+    CATCH cx_salv_not_found INTO not_found.
+      " error handling
+  ENDTRY.
+
+  CLEAR:lv_scrtext_s,lv_scrtext_m,lv_scrtext_l.
+  lv_scrtext_s = lv_scrtext_m = lv_scrtext_l = TEXT-t23.
+
+  TRY.
+      gr_column = gr_columns->get_column( 'KTEXT' ).
+      gr_column->set_short_text( lv_scrtext_s ).
+      gr_column->set_medium_text( lv_scrtext_m ).
+      gr_column->set_long_text( lv_scrtext_l ).
+    CATCH cx_salv_not_found INTO not_found.
+      " error handling
+  ENDTRY.
+
+  CLEAR:lv_scrtext_s,lv_scrtext_m,lv_scrtext_l.
+  lv_scrtext_s = lv_scrtext_m = lv_scrtext_l = TEXT-t24.
+
+  TRY.
+      gr_column = gr_columns->get_column( 'ERDAT' ).
+      gr_column->set_short_text( lv_scrtext_s ).
+      gr_column->set_medium_text( lv_scrtext_m ).
+      gr_column->set_long_text( lv_scrtext_l ).
+    CATCH cx_salv_not_found INTO not_found.
+      " error handling
+  ENDTRY.
+
+  CLEAR:lv_scrtext_s,lv_scrtext_m,lv_scrtext_l.
+  lv_scrtext_s = lv_scrtext_m = lv_scrtext_l = TEXT-t25.
+
+  TRY.
+      gr_column = gr_columns->get_column( 'BADAT' ).
+      gr_column->set_short_text( lv_scrtext_s ).
+      gr_column->set_medium_text( lv_scrtext_m ).
+      gr_column->set_long_text( lv_scrtext_l ).
+    CATCH cx_salv_not_found INTO not_found.
+      " error handling
+  ENDTRY.
+
+  CLEAR:lv_scrtext_s,lv_scrtext_m,lv_scrtext_l.
+  lv_scrtext_s = lv_scrtext_m = lv_scrtext_l = TEXT-t26.
+
+  TRY.
+      gr_column = gr_columns->get_column( 'EKORG' ).
+      gr_column->set_short_text( lv_scrtext_s ).
+      gr_column->set_medium_text( lv_scrtext_m ).
+      gr_column->set_long_text( lv_scrtext_l ).
+    CATCH cx_salv_not_found INTO not_found.
+      " error handling
+  ENDTRY.
+
+  CLEAR:lv_scrtext_s,lv_scrtext_m,lv_scrtext_l.
+  lv_scrtext_s = lv_scrtext_m = lv_scrtext_l = TEXT-t27.
+
+  TRY.
+      gr_column = gr_columns->get_column( 'EKGRP' ).
+      gr_column->set_short_text( lv_scrtext_s ).
+      gr_column->set_medium_text( lv_scrtext_m ).
+      gr_column->set_long_text( lv_scrtext_l ).
+    CATCH cx_salv_not_found INTO not_found.
+      " error handling
+  ENDTRY.
+
+  CLEAR:lv_scrtext_s,lv_scrtext_m,lv_scrtext_l.
+  lv_scrtext_s = lv_scrtext_m = lv_scrtext_l = TEXT-t28.
+
+  TRY.
+      gr_column = gr_columns->get_column( 'LOG_PROCES' ).
+      gr_column->set_short_text( lv_scrtext_s ).
+      gr_column->set_medium_text( lv_scrtext_m ).
+      gr_column->set_long_text( lv_scrtext_l ).
+      gr_column->set_output_length( '30' ).
+    CATCH cx_salv_not_found INTO not_found.
+      " error handling
+  ENDTRY.
+
+
+  CLEAR:lv_scrtext_s,lv_scrtext_m,lv_scrtext_l.
+  lv_scrtext_s = lv_scrtext_m = lv_scrtext_l = TEXT-t29.
+
+  TRY.
+      gr_column = gr_columns->get_column( 'ICON' ).
+      gr_column->set_short_text( lv_scrtext_s ).
+      gr_column->set_medium_text( lv_scrtext_m ).
+      gr_column->set_long_text( lv_scrtext_l ).
+    CATCH cx_salv_not_found INTO not_found.
+      " error handling
+  ENDTRY.
+
+  gr_column ?= gr_columns->get_column( 'VRTKZ_' ).
+  gr_column->set_visible( ' ' ).
+  gr_column ?= gr_columns->get_column( 'KNTTP_' ).
+  gr_column->set_visible( ' ' ).
+
+  gr_columns->set_column_position( columnname = 'ICON' position = 1 ).
+  gr_columns->set_column_position( columnname = 'LOG_PROCES' position = 2 ).
+  gr_columns->set_column_position( columnname = 'BNFPO' position = 3 ).
+
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form f_optimize_column_width
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM f_optimize_column_width .
+*  gr_columns->set_optimize( ).
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form f_obtener_datos
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM f_obtener_datos .
+
+  SELECT matnr maktx maktg
+    INTO TABLE gdt_makt
+    FROM makt
+    FOR ALL ENTRIES IN gdt_excel
+    WHERE spras EQ sy-langu
+      AND matnr EQ gdt_excel-matnr.
+
+  SELECT lifnr name1 name2 INTO TABLE gdt_lfa1
+    FROM lfa1
+    FOR ALL ENTRIES IN gdt_excel
+    WHERE lifnr EQ gdt_excel-flief.
+
+  SELECT matnr meins INTO TABLE gdt_mara
+    FROM mara
+    FOR ALL ENTRIES IN gdt_excel
+    WHERE matnr EQ gdt_excel-matnr.
+
+  SELECT * INTO TABLE gdt_tka02
+    FROM tka02
+    WHERE bukrs EQ p_bukrs.
+  IF sy-subrc EQ 0.
+    SELECT * INTO TABLE gdt_cskt
+      FROM cskt
+      FOR ALL ENTRIES IN gdt_tka02
+      WHERE kokrs EQ gdt_tka02-kokrs.
+  ENDIF.
+
+  SELECT * INTO TABLE gdt_prps
+    FROM prps
+    FOR ALL ENTRIES IN gdt_excel
+    WHERE posid EQ gdt_excel-imputacion(24).
+
+  SELECT * INTO TABLE gdt_aufk
+    FROM aufk
+    FOR ALL ENTRIES IN gdt_excel
+    WHERE aufnr EQ gdt_excel-imputacion(12).
+
+  SELECT * INTO TABLE gdt_const
+    FROM ztconstantes
+    WHERE modulo   EQ 'MM'
+      AND programa EQ sy-repid.
+  LOOP AT gdt_const ASSIGNING FIELD-SYMBOL(<fs_const>).
+    CASE <fs_const>-campo.
+      WHEN 'BSART'.
+        APPEND INITIAL LINE TO gr_bsart ASSIGNING FIELD-SYMBOL(<fs_bsart>).
+        <fs_bsart>-sign = <fs_const>-signo. <fs_bsart>-option = <fs_const>-opcion.
+        <fs_bsart>-low  = <fs_const>-valor_low.
+      WHEN OTHERS.
+    ENDCASE.
+  ENDLOOP.
+
+  SELECT * INTO TABLE gdt_t024e
+    FROM t024e
+    WHERE bukrs EQ p_bukrs.
+
+  SELECT * INTO TABLE gdt_tcurc
+    FROM tcurc.
+
+  SELECT * INTO TABLE gdt_t001w
+    FROM t001w
+    FOR ALL ENTRIES IN gdt_excel
+    WHERE werks EQ gdt_excel-werks.
+
+  SELECT * INTO TABLE gdt_zmm_afnam
+    FROM zmm_afnam
+    FOR ALL ENTRIES IN gdt_excel
+    WHERE bukrs EQ p_bukrs
+      AND afnam EQ gdt_excel-afnam.
+
+  SELECT * INTO TABLE gdt_marc
+    FROM marc
+    FOR ALL ENTRIES IN gdt_excel
+    WHERE matnr EQ gdt_excel-matnr
+      AND werks EQ gdt_excel-werks.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form f_log_errores
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      --> P_
+*&      --> TEXT_E00
+*&      <-- <FS_EXCEL>_LOG_PROCES
+*&---------------------------------------------------------------------*
+FORM f_log_errores  USING pi_icon
+                          pi_text
+                    CHANGING po_log_proces.
+
+  IF po_log_proces IS INITIAL.
+    po_log_proces = pi_text.
+  ELSE.
+    CONCATENATE po_log_proces pi_text INTO po_log_proces
+    SEPARATED BY ','.
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form f_generar_solped
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM f_generar_solped .
+  REFRESH:gdt_pritem,gdt_pritemx,gdt_pritemtext,gdt_praccount,gdt_praccountx.
+  CLEAR:gwa_prheader,gwa_prheaderx.
+
+  DATA ldt_split TYPE TABLE OF string.
+  DATA lr_split    TYPE REF TO string.
+
+  LOOP AT gdt_excel ASSIGNING FIELD-SYMBOL(<fs_excel>).
+    AT NEW bnfpo.
+      CLEAR gv_pos.
+    ENDAT.
+
+    IF <fs_excel>-tipo EQ 'P'.
+      gwa_prheader-pr_type = <fs_excel>-bsart.
+      gwa_prheaderx-pr_type = abap_true.
+
+      APPEND INITIAL LINE TO gdt_pritem ASSIGNING FIELD-SYMBOL(<fs_pritem>).
+      <fs_pritem>-preq_item   = <fs_excel>-bnfpo.
+      <fs_pritem>-pur_group   = <fs_excel>-ekgrp.
+      <fs_pritem>-preq_name   = <fs_excel>-afnam.
+      <fs_pritem>-material    = <fs_excel>-matnr.
+      <fs_pritem>-plant       = <fs_excel>-werks.
+      <fs_pritem>-quantity    = <fs_excel>-menge.
+      <fs_pritem>-preq_date   = <fs_excel>-badat.
+      <fs_pritem>-preq_price  = <fs_excel>-preis.
+      <fs_pritem>-acctasscat  = <fs_excel>-knttp.
+      <fs_pritem>-purch_org   = <fs_excel>-ekorg.
+      <fs_pritem>-producttype = '2'.
+      <fs_pritem>-startdate   = <fs_excel>-startdate.
+      <fs_pritem>-enddate     = <fs_excel>-enddate.
+      <fs_pritem>-unit        = <fs_excel>-meins.
+      <fs_pritem>-des_vendor  = <fs_excel>-flief.
+      <fs_pritem>-po_unit     = <fs_excel>-bmein.
+      IF <fs_excel>-vrtkz EQ 0.
+      ELSE.
+        <fs_pritem>-distrib     = <fs_excel>-vrtkz.
+        <fs_pritem>-part_inv = '2'.
+      ENDIF.
+
+      APPEND INITIAL LINE TO gdt_pritemx ASSIGNING FIELD-SYMBOL(<fs_pritemx>).
+      <fs_pritemx>-preq_item = <fs_excel>-bnfpo.
+      <fs_pritemx>-pur_group = <fs_pritemx>-preq_name = <fs_pritemx>-material    =
+      <fs_pritemx>-plant = <fs_pritemx>-quantity = <fs_pritemx>-preq_date        =
+      <fs_pritemx>-preq_price = <fs_pritemx>-acctasscat = <fs_pritemx>-purch_org =
+      <fs_pritemx>-producttype = <fs_pritemx>-startdate = <fs_pritemx>-enddate   =
+      <fs_pritemx>-unit = <fs_pritemx>-des_vendor = <fs_pritemx>-po_unit         =
+      <fs_pritemx>-distrib = abap_true.
+
+      REFRESH ldt_split.
+      SPLIT <fs_excel>-texto_pos AT '&' INTO TABLE ldt_split.
+
+      LOOP AT ldt_split REFERENCE INTO lr_split.
+        APPEND INITIAL LINE TO gdt_pritemtext ASSIGNING FIELD-SYMBOL(<fs_pritemtext>).
+        <fs_pritemtext>-preq_item = <fs_excel>-bnfpo.
+        <fs_pritemtext>-text_id = 'B01'.
+        <fs_pritemtext>-text_line = lr_split->*. "<fs_excel>-texto_pos(132).
+        ADD 1 TO gv_text_form.
+        <fs_pritemtext>-text_form = gv_text_form.
+      ENDLOOP.
+
+
+*      APPEND INITIAL LINE TO gdt_pritemtext ASSIGNING <fs_pritemtext>.
+*      <fs_pritemtext>-preq_item = <fs_excel>-bnfpo.
+*      <fs_pritemtext>-text_id = 'B01'.
+*      <fs_pritemtext>-text_line = <fs_excel>-texto_pos+132(88).
+*      ADD 1 TO gv_text_form.
+*      <fs_pritemtext>-text_form = gv_text_form.
+
+*      APPEND INITIAL LINE TO gdt_pritemtext ASSIGNING <fs_pritemtext>.
+*      <fs_pritemtext>-preq_item = <fs_excel>-bnfpo.
+*      <fs_pritemtext>-text_id = 'B01'.
+*      <fs_pritemtext>-text_line = <fs_excel>-texto_pos+264(132).
+*      ADD 1 TO gv_text_form.
+*      <fs_pritemtext>-text_form = gv_text_form.
+
+      DELETE gdt_pritemtext WHERE text_line EQ space.
+    ELSE.
+
+      APPEND INITIAL LINE TO gdt_praccountx ASSIGNING FIELD-SYMBOL(<fs_praccountx>).
+      <fs_praccountx>-preq_item = <fs_excel>-bnfpo.
+
+      ADD 1 TO gv_pos.
+      CASE <fs_excel>-vrtkz_.
+        WHEN 1 OR 0.
+          APPEND INITIAL LINE TO gdt_praccount ASSIGNING FIELD-SYMBOL(<fs_praccount>).
+          <fs_praccount>-preq_item = <fs_excel>-bnfpo.
+          <fs_praccount>-serial_no = <fs_praccountx>-serial_no = gv_pos.
+          <fs_praccount>-quantity  = <fs_excel>-dist_cant.
+          <fs_praccountx>-quantity = abap_true.
+        WHEN 2.
+          APPEND INITIAL LINE TO gdt_praccount ASSIGNING <fs_praccount>.
+          <fs_praccount>-preq_item  = <fs_excel>-bnfpo.
+          <fs_praccount>-serial_no = <fs_praccountx>-serial_no = gv_pos.
+          <fs_praccount>-distr_perc = <fs_excel>-vproz.
+          <fs_praccountx>-distr_perc = abap_true.
+      ENDCASE.
+
+      IF <fs_excel>-knttp_ EQ 'K'.
+        <fs_praccount>-costcenter = <fs_excel>-imputacion."(23)
+        <fs_praccountx>-costcenter = abap_true.
+      ELSEIF <fs_excel>-knttp_ EQ 'P'.
+        <fs_praccount>-wbs_element = <fs_excel>-imputacion.
+        <fs_praccountx>-wbs_element = abap_true.
+      ELSEIF <fs_excel>-knttp_ EQ 'F'.
+        <fs_praccount>-orderid = <fs_excel>-imputacion.
+        <fs_praccountx>-orderid = abap_true.
+      ENDIF.
+
+
+    ENDIF.
+  ENDLOOP.
+
+  DELETE gdt_pritemtext WHERE text_line EQ space.
+
+  CALL FUNCTION 'BAPI_PR_CREATE'
+    EXPORTING
+      prheader     = gwa_prheader
+      prheaderx    = gwa_prheaderx
+    IMPORTING
+      number       = gv_number
+      prheaderexp  = gwa_prheaderexp
+    TABLES
+      return       = gdt_return
+      pritem       = gdt_pritem
+      pritemx      = gdt_pritemx
+      praccount    = gdt_praccount
+      praccountx   = gdt_praccountx
+      pritemtext   = gdt_pritemtext
+      prheadertext = gdt_prheadertext.
+  READ TABLE gdt_return ASSIGNING FIELD-SYMBOL(<fs_return>) WITH KEY type = 'E'.
+  IF sy-subrc EQ 0.
+    LOOP AT gdt_excel ASSIGNING <fs_excel> WHERE tipo EQ 'P'.
+      <fs_excel>-icon = '@0A@'.
+      <fs_excel>-log_proces = <fs_excel>-log_proces && |,| && <fs_return>-message.
+    ENDLOOP.
+    go_alv->refresh( ).
+  ELSE.
+    CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
+      EXPORTING
+        wait = 'X'.
+    LOOP AT gdt_excel ASSIGNING <fs_excel> WHERE tipo EQ 'P'.
+      <fs_excel>-icon = '@08@'.
+      <fs_excel>-log_proces = gv_number.
+    ENDLOOP.
+    go_alv->refresh( ).
+  ENDIF.
+ENDFORM.
+
+*{ inicio @P003
+*&---------------------------------------------------------------------*
+*& Form OBJETOAUTO
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+
+*Asignación de objeto de autorización
+FORM objetoauto .
+  AUTHORITY-CHECK OBJECT 'ZMM_BUKRS'
+    ID 'ACTVT' FIELD '03'.
+  IF sy-subrc <> 0.
+*  Implement a suitable exception handling here
+    MESSAGE 'The user is not authorized.' TYPE 'E'.
+  ENDIF.
+ENDFORM.
+
+*} fin @P003
